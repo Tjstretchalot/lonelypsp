@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from typing import Literal
 
 from httppubsubprotocol.ws.constants import SubscriberToBroadcasterWSMessageType
+from httppubsubprotocol.compat import fast_dataclass
 
 
-@dataclass(frozen=True, slots=True)
+@fast_dataclass
 class S2B_ContinueReceive:
     """
     S2B = Subscriber to Broadcaster

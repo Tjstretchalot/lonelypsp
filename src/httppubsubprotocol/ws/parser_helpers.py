@@ -1,15 +1,14 @@
 from types import TracebackType
 from typing import Dict, Generator, Generic, Iterable, Iterator, List, Type, TypeVar
 from httppubsubprotocol.sync_io import SyncReadableBytesIO
-from dataclasses import dataclass
-
+from httppubsubprotocol.compat import fast_dataclass
 from httppubsubprotocol.ws.constants import (
     BroadcasterToSubscriberWSMessageType,
     PubSubWSMessageFlags,
 )
 
 
-@dataclass(frozen=True, slots=True)
+@fast_dataclass
 class B2S_MessagePrefix:
     """
     B2S = Broadcaster to subscriber

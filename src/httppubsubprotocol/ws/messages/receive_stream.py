@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from typing import Literal, Optional, Union
 
 from httppubsubprotocol.ws.constants import BroadcasterToSubscriberWSMessageType
+from httppubsubprotocol.compat import fast_dataclass
 
 
-@dataclass(frozen=True, slots=True)
+@fast_dataclass
 class B2S_ReceiveStreamStartUncompressed:
     """
     B2S = Broadcaster to Subscriber
@@ -47,7 +48,7 @@ class B2S_ReceiveStreamStartUncompressed:
     """The first part of the notification in uncompressed form"""
 
 
-@dataclass(frozen=True, slots=True)
+@fast_dataclass
 class B2S_ReceiveStreamStartCompressed:
     """
     B2S = Broadcaster to Subscriber
@@ -93,7 +94,7 @@ class B2S_ReceiveStreamStartCompressed:
     """
 
 
-@dataclass(frozen=True, slots=True)
+@fast_dataclass
 class B2S_ReceiveStreamContinuation:
     """
     B2S = Broadcaster to Subscriber

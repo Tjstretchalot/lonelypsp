@@ -8,9 +8,10 @@ from httppubsubprotocol.ws.constants import (
 )
 from httppubsubprotocol.ws.generic_parser import S2B_MessageParser
 from httppubsubprotocol.ws.parser_helpers import parse_simple_headers
+from httppubsubprotocol.compat import fast_dataclass
 
 
-@dataclass(frozen=True, slots=True)
+@fast_dataclass
 class S2B_Configure:
     """
     S2B = Subscriber to Broadcaster

@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from typing import Literal, Union
 
 from httppubsubprotocol.ws.constants import BroadcasterToSubscriberWSMessageType
+from httppubsubprotocol.compat import fast_dataclass
 
 
-@dataclass(frozen=True, slots=True)
+@fast_dataclass
 class B2S_ConfirmUnsubscribeExact:
     """
     B2S = Broadcaster to Subscriber
@@ -18,7 +19,7 @@ class B2S_ConfirmUnsubscribeExact:
     """the topic the subscriber is no longer subscribed to"""
 
 
-@dataclass(frozen=True, slots=True)
+@fast_dataclass
 class B2S_ConfirmUnsubscribeGlob:
     """
     B2S = Broadcaster to Subscriber

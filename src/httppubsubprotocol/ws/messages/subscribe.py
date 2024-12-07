@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from typing import Literal, Optional, Union
 
 from httppubsubprotocol.ws.constants import SubscriberToBroadcasterWSMessageType
+from httppubsubprotocol.compat import fast_dataclass
 
 
-@dataclass(frozen=True, slots=True)
+@fast_dataclass
 class S2B_SubscribeExact:
     """
     S2B = Subscriber to Broadcaster
@@ -25,7 +26,7 @@ class S2B_SubscribeExact:
     """the topic to subscribe to"""
 
 
-@dataclass(frozen=True, slots=True)
+@fast_dataclass
 class S2B_SubscribeGlob:
     """
     S2B = Subscriber to Broadcaster
