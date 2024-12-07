@@ -4,7 +4,7 @@ from typing import Literal
 from httppubsubprotocol.ws.constants import BroadcasterToSubscriberWSMessageType
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class B2S_ConfirmNotify:
     """
     B2S = Broadcaster to Subscriber

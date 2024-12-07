@@ -4,7 +4,7 @@ from typing import Literal, Optional, Union
 from httppubsubprotocol.ws.constants import SubscriberToBroadcasterWSMessageType
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class S2B_NotifyStreamStartUncompressed:
     """
     S2B = Subscriber to Broadcaster
@@ -47,7 +47,7 @@ class S2B_NotifyStreamStartUncompressed:
     """The first part of the notification in uncompressed form"""
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class S2B_NotifyStreamStartCompressed:
     """
     S2B = Subscriber to Broadcaster
@@ -93,7 +93,7 @@ class S2B_NotifyStreamStartCompressed:
     """
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class S2B_NotifyStreamContinuation:
     """
     S2B = Subscriber to Broadcaster

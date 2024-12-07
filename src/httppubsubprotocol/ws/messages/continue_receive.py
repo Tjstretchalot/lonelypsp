@@ -4,7 +4,7 @@ from typing import Literal
 from httppubsubprotocol.ws.constants import SubscriberToBroadcasterWSMessageType
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class S2B_ContinueReceive:
     """
     S2B = Subscriber to Broadcaster

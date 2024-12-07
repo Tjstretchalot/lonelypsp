@@ -4,7 +4,7 @@ from typing import Literal, Union
 from httppubsubprotocol.ws.constants import BroadcasterToSubscriberWSMessageType
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class B2S_ConfirmSubscribeExact:
     """
     B2S = Broadcaster to Subscriber
@@ -18,7 +18,7 @@ class B2S_ConfirmSubscribeExact:
     """the topic the subscriber is now subscribed to"""
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class B2S_ConfirmSubscribeGlob:
     """
     B2S = Broadcaster to Subscriber
