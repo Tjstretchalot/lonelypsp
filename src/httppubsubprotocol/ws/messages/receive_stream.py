@@ -1,19 +1,19 @@
 from dataclasses import dataclass
 from typing import Literal, Optional, Union
 
-from httppubsubprotocol.ws.constants import SubscriberToBroadcasterWSMessageType
+from httppubsubprotocol.ws.constants import BroadcasterToSubscriberWSMessageType
 
 
 @dataclass
-class S2B_NotifyStreamStartUncompressed:
+class B2S_ReceiveStreamStartUncompressed:
     """
-    S2B = Subscriber to Broadcaster
+    B2S = Broadcaster to Subscriber
     See the type enum documentation for more information on the fields
 
     This type is for when x-part-id is 0 and x-compressor is 0
     """
 
-    type: Literal[SubscriberToBroadcasterWSMessageType.NOTIFY_STREAM]
+    type: Literal[BroadcasterToSubscriberWSMessageType.RECEIVE_STREAM]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -24,7 +24,7 @@ class S2B_NotifyStreamStartUncompressed:
     """
 
     identifier: bytes
-    """an arbitrary identifier for this notification assigned by the subscriber; max 64 bytes
+    """an arbitrary identifier for this notification assigned by the broadcaster; max 64 bytes
     """
 
     part_id: Literal[None]
@@ -48,15 +48,15 @@ class S2B_NotifyStreamStartUncompressed:
 
 
 @dataclass
-class S2B_NotifyStreamStartCompressed:
+class B2S_ReceiveStreamStartCompressed:
     """
-    S2B = Subscriber to Broadcaster
+    B2S = Broadcaster to Subscriber
     See the type enum documentation for more information on the fields
 
     This type is for when x-part-id is 0 and x-compressor is not 0
     """
 
-    type: Literal[SubscriberToBroadcasterWSMessageType.NOTIFY_STREAM]
+    type: Literal[BroadcasterToSubscriberWSMessageType.RECEIVE_STREAM]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -67,7 +67,7 @@ class S2B_NotifyStreamStartCompressed:
     """
 
     identifier: bytes
-    """an arbitrary identifier for this notification assigned by the subscriber; max 64 bytes
+    """an arbitrary identifier for this notification assigned by the broadcaster; max 64 bytes
     """
 
     part_id: Literal[None]
@@ -94,15 +94,15 @@ class S2B_NotifyStreamStartCompressed:
 
 
 @dataclass
-class S2B_NotifyStreamContinuation:
+class B2S_ReceiveStreamContinuation:
     """
-    S2B = Subscriber to Broadcaster
+    B2S = Broadcaster to Subscriber
     See the type enum documentation for more information on the fields
 
     This type is for when x-part-id is not 0
     """
 
-    type: Literal[SubscriberToBroadcasterWSMessageType.NOTIFY_STREAM]
+    type: Literal[BroadcasterToSubscriberWSMessageType.RECEIVE_STREAM]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -113,7 +113,7 @@ class S2B_NotifyStreamContinuation:
     """
 
     identifier: bytes
-    """an arbitrary identifier for this notification assigned by the subscriber; max 64 bytes
+    """an arbitrary identifier for this notification assigned by the broadcaster; max 64 bytes
     """
 
     part_id: int
@@ -123,8 +123,8 @@ class S2B_NotifyStreamContinuation:
     """the additional payload data for the notification"""
 
 
-S2B_NotifyStream = Union[
-    S2B_NotifyStreamStartUncompressed,
-    S2B_NotifyStreamStartCompressed,
-    S2B_NotifyStreamContinuation,
+B2S_ReceiveStream = Union[
+    B2S_ReceiveStreamStartUncompressed,
+    B2S_ReceiveStreamStartCompressed,
+    B2S_ReceiveStreamContinuation,
 ]
