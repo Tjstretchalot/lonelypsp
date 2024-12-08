@@ -210,7 +210,7 @@ class B2S_ReceiveStreamParser:
 
                 headers["x-part-id"] = part_id_bytes
 
-                part_id = int.from_bytes(part_id_bytes)
+                part_id = int.from_bytes(part_id_bytes, "big")
 
                 if part_id == 0:
                     for header_name in _start_headers:
@@ -231,7 +231,7 @@ class B2S_ReceiveStreamParser:
         if len(part_id_bytes) > 8:
             raise ValueError("x-part-id must be at most 8 bytes")
 
-        part_id = int.from_bytes(part_id_bytes)
+        part_id = int.from_bytes(part_id_bytes, "big")
 
         if part_id > 0:
             return B2S_ReceiveStreamContinuation(
@@ -248,18 +248,18 @@ class B2S_ReceiveStreamParser:
         if len(compressor_id_bytes) > 8:
             raise ValueError("x-compressor must be at most 8 bytes")
 
-        compressor_id = int.from_bytes(compressor_id_bytes)
+        compressor_id = int.from_bytes(compressor_id_bytes, "big")
         compressed_length_bytes = headers["x-compressed-length"]
         if len(compressed_length_bytes) > 8:
             raise ValueError("x-compressed-length must be at most 8 bytes")
 
-        compressed_length = int.from_bytes(compressed_length_bytes)
+        compressed_length = int.from_bytes(compressed_length_bytes, "big")
 
         decompressed_length_bytes = headers["x-decompressed-length"]
         if len(decompressed_length_bytes) > 8:
             raise ValueError("x-decompressed-length must be at most 8 bytes")
 
-        decompressed_length = int.from_bytes(decompressed_length_bytes)
+        decompressed_length = int.from_bytes(decompressed_length_bytes, "big")
 
         compressed_sha512 = headers["x-compressed-sha512"]
         if len(compressed_sha512) != 64:

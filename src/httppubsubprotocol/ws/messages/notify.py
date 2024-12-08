@@ -135,19 +135,19 @@ class S2B_NotifyParser:
         if len(compressor_id_bytes) > 8:
             raise ValueError("x-compressor must be at most 8 bytes")
 
-        compressor_id = int.from_bytes(compressor_id_bytes)
+        compressor_id = int.from_bytes(compressor_id_bytes, "big")
 
         compressed_length_bytes = headers["x-compressed-length"]
         if len(compressed_length_bytes) > 8:
             raise ValueError("x-compressed-length must be at most 8 bytes")
 
-        compressed_length = int.from_bytes(compressed_length_bytes)
+        compressed_length = int.from_bytes(compressed_length_bytes, "big")
 
         decompressed_length_bytes = headers["x-decompressed-length"]
         if len(decompressed_length_bytes) > 8:
             raise ValueError("x-decompressed-length must be at most 8 bytes")
 
-        decompressed_length = int.from_bytes(decompressed_length_bytes)
+        decompressed_length = int.from_bytes(decompressed_length_bytes, "big")
 
         compressed_sha512 = headers["x-compressed-sha512"]
         if len(compressed_sha512) != 64:

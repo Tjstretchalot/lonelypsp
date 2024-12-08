@@ -61,7 +61,7 @@ class B2S_ContinueNotifyParser:
         if len(part_id_bytes) > 8:
             raise ValueError("x-part-id must be at most 8 bytes")
 
-        part_id = int.from_bytes(part_id_bytes)
+        part_id = int.from_bytes(part_id_bytes, "big")
 
         return B2S_ContinueNotify(
             type=type,

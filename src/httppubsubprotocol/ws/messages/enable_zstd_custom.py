@@ -82,25 +82,25 @@ class B2S_EnableZstdCustomParser:
         if len(identifier_bytes) > 8:
             raise ValueError("x-identifier must be at most 8 bytes")
 
-        identifier = int.from_bytes(identifier_bytes)
+        identifier = int.from_bytes(identifier_bytes, "big")
 
         compression_level_bytes = headers["x-compression-level"]
         if len(compression_level_bytes) > 2:
             raise ValueError("x-compression-level max 2 bytes")
 
-        compression_level = int.from_bytes(compression_level_bytes, signed=True)
+        compression_level = int.from_bytes(compression_level_bytes, "big", signed=True)
 
         min_size_bytes = headers["x-min-size"]
         if len(min_size_bytes) > 4:
             raise ValueError("x-min-size max 4 bytes")
 
-        min_size = int.from_bytes(min_size_bytes)
+        min_size = int.from_bytes(min_size_bytes, "big")
 
         max_size_bytes = headers["x-max-size"]
         if len(max_size_bytes) > 8:
             raise ValueError("x-max-size max 8 bytes")
 
-        max_size = int.from_bytes(max_size_bytes)
+        max_size = int.from_bytes(max_size_bytes, "big")
 
         dictionary = payload.read(-1)
 
