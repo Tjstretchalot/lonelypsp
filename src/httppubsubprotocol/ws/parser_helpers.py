@@ -5,6 +5,7 @@ from httppubsubprotocol.compat import fast_dataclass
 from httppubsubprotocol.ws.constants import (
     BroadcasterToSubscriberWSMessageType,
     PubSubWSMessageFlags,
+    SubscriberToBroadcasterWSMessageType,
 )
 
 
@@ -22,6 +23,64 @@ class B2S_MessagePrefix:
 
     type: BroadcasterToSubscriberWSMessageType
     """enum value describing the contents of the message"""
+
+
+def parse_b2s_message_prefix(body: SyncReadableBytesIO) -> B2S_MessagePrefix:
+    """Consumes and interprets the first four bytes of a broadcaster to
+    subscriber message. This is 2 bytes for flags and then 2 bytes for the
+    message type discriminator.
+
+    Raises ValueError if the message is too short to contain the prefix
+    or is otherwise malformed
+
+    Propagates errors from reading the body
+    """
+    flags_bytes = read_exact(body, 2)
+    flags_int = int.from_bytes(flags_bytes, "big")
+    flags = PubSubWSMessageFlags(flags_int)
+
+    message_type_bytes = read_exact(body, 2)
+    message_type_int = int.from_bytes(message_type_bytes, "big")
+    message_type = BroadcasterToSubscriberWSMessageType(message_type_int)
+
+    return B2S_MessagePrefix(flags, message_type)
+
+
+@fast_dataclass
+class S2B_MessagePrefix:
+    """
+    S2B = Subscriber to Broadcaster
+
+    Describes the first 4 bytes of the message that are common to all S2B messages
+    which are required to know how to parse the rest of the message
+    """
+
+    flags: PubSubWSMessageFlags
+    """bit flags for parsing the message"""
+
+    type: SubscriberToBroadcasterWSMessageType
+    """enum value describing the contents of the message"""
+
+
+def parse_s2b_message_prefix(body: SyncReadableBytesIO) -> S2B_MessagePrefix:
+    """Consumes and interprets the first four bytes of a subscriber to
+    broadcaster message. This is 2 bytes for flags and then 2 bytes for the
+    message type discriminator.
+
+    Raises ValueError if the message is too short to contain the prefix
+    or is otherwise malformed
+
+    Propagates errors from reading the body
+    """
+    flags_bytes = read_exact(body, 2)
+    flags_int = int.from_bytes(flags_bytes, "big")
+    flags = PubSubWSMessageFlags(flags_int)
+
+    message_type_bytes = read_exact(body, 2)
+    message_type_int = int.from_bytes(message_type_bytes, "big")
+    message_type = SubscriberToBroadcasterWSMessageType(message_type_int)
+
+    return S2B_MessagePrefix(flags, message_type)
 
 
 T = TypeVar("T")
@@ -56,27 +115,6 @@ def read_exact(stream: SyncReadableBytesIO, n: int) -> bytes:
     if len(data) != n:
         raise ValueError(f"underflow: expected {n} bytes, got {len(data)}")
     return data
-
-
-def parse_b2s_message_prefix(body: SyncReadableBytesIO) -> B2S_MessagePrefix:
-    """Consumes and interprets the first four bytes of a broadcaster to
-    subscriber message. This is 2 bytes for flags and then 2 bytes for the
-    message type discriminator.
-
-    Raises ValueError if the message is too short to contain the prefix
-    or is otherwise malformed
-
-    Propagates errors from reading the body
-    """
-    flags_bytes = read_exact(body, 2)
-    flags_int = int.from_bytes(flags_bytes, "big")
-    flags = PubSubWSMessageFlags(flags_int)
-
-    message_type_bytes = read_exact(body, 2)
-    message_type_int = int.from_bytes(message_type_bytes, "big")
-    message_type = BroadcasterToSubscriberWSMessageType(message_type_int)
-
-    return B2S_MessagePrefix(flags, message_type)
 
 
 def parse_minimal_message_headers(
