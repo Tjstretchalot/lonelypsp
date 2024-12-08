@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Iterable, List, Literal, Type
+import io
+from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
 
 from httppubsubprotocol.sync_io import SyncReadableBytesIO
 from httppubsubprotocol.ws.constants import (
@@ -9,6 +9,7 @@ from httppubsubprotocol.ws.constants import (
 from httppubsubprotocol.ws.generic_parser import S2B_MessageParser
 from httppubsubprotocol.ws.parser_helpers import parse_simple_headers
 from httppubsubprotocol.compat import fast_dataclass
+from httppubsubprotocol.ws.serializer_helpers import serialize_simple_message
 
 
 @fast_dataclass
@@ -41,7 +42,7 @@ class S2B_Configure:
     """
 
 
-_headers: Iterable[str] = ("x-subscriber-nonce", "x-enable-zstd", "x-enable-training")
+_headers: Collection[str] = ("x-subscriber-nonce", "x-enable-zstd", "x-enable-training")
 
 
 class S2B_ConfigureParser:
@@ -83,6 +84,26 @@ class S2B_ConfigureParser:
             enable_training=enable_training,
             initial_dict=initial_dict,
         )
+
+
+def serialize_s2b_configure(
+    configure: S2B_Configure, /, *, minimal_headers: bool
+) -> Union[bytes, bytearray, memoryview]:
+    """Serializes the given subscriber -> broadcaster configure message into the
+    bytes payload of the websocket message
+    """
+    return serialize_simple_message(
+        type=configure.type,
+        header_names=_headers,
+        header_values=[
+            configure.subscriber_nonce,
+            b"\x01" if configure.enable_zstd else b"\x00",
+            b"\x01" if configure.enable_training else b"\x00",
+            configure.initial_dict.to_bytes(2, "big"),
+        ],
+        payload=b"",
+        minimal_headers=minimal_headers,
+    )
 
 
 if TYPE_CHECKING:
