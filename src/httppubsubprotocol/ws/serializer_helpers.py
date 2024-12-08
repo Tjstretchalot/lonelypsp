@@ -112,3 +112,15 @@ def serialize_simple_message(
     out.write(payload)
     assert out.tell() == total_size
     return out.buffer
+
+
+def int_to_minimal_unsigned(n: int) -> bytes:
+    """Converts an integer to a minimal unsigned byte representation. In order
+    to parse this the parser will need to know the length in bytes from the protocol,
+    e.g., because its a header value.
+
+    Result is big-endian encoded
+    """
+    assert n >= 0
+    bit_length = (n.bit_length() - 1) // 8 + 1
+    return n.to_bytes(bit_length)

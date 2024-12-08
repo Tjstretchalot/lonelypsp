@@ -1,8 +1,17 @@
-from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
 
-from httppubsubprotocol.ws.constants import BroadcasterToSubscriberWSMessageType
+from httppubsubprotocol.sync_io import SyncReadableBytesIO
+from httppubsubprotocol.ws.constants import (
+    BroadcasterToSubscriberWSMessageType,
+    PubSubWSMessageFlags,
+)
 from httppubsubprotocol.compat import fast_dataclass
+from httppubsubprotocol.ws.generic_parser import B2S_MessageParser
+from httppubsubprotocol.ws.parser_helpers import parse_simple_headers
+from httppubsubprotocol.ws.serializer_helpers import (
+    int_to_minimal_unsigned,
+    serialize_simple_message,
+)
 
 
 @fast_dataclass
@@ -21,3 +30,59 @@ class B2S_ConfirmNotify:
 
     subscribers: int
     """how many subscribers were successfully notified"""
+
+
+_headers: Collection[str] = ("x-identifier", "x-subscribers")
+
+
+class B2S_ConfirmNotifyParser:
+    """Satisfies B2S_MessageParser[B2S_ConfirmNotify]"""
+
+    @classmethod
+    def relevant_types(cls) -> List[BroadcasterToSubscriberWSMessageType]:
+        return [BroadcasterToSubscriberWSMessageType.CONFIRM_CONFIGURE]
+
+    @classmethod
+    def parse(
+        cls,
+        flags: PubSubWSMessageFlags,
+        type: BroadcasterToSubscriberWSMessageType,
+        payload: SyncReadableBytesIO,
+    ) -> B2S_ConfirmNotify:
+        assert type == BroadcasterToSubscriberWSMessageType.CONFIRM_NOTIFY
+
+        headers = parse_simple_headers(flags, payload, _headers)
+        identifier = headers["x-identifier"]
+        if len(identifier) > 64:
+            raise ValueError("x-identifier must be at most 64 bytes")
+
+        subscriber_bytes = headers["x-subscribers"]
+        if len(subscriber_bytes) > 8:
+            raise ValueError("x-subscribers must be at most 8 bytes")
+
+        subscribers = int.from_bytes(subscriber_bytes, "big")
+
+        return B2S_ConfirmNotify(
+            type=type,
+            identifier=identifier,
+            subscribers=subscribers,
+        )
+
+
+if TYPE_CHECKING:
+    _: Type[B2S_MessageParser[B2S_ConfirmNotify]] = B2S_ConfirmNotifyParser
+
+
+def serialize_b2s_confirm_notify(
+    confirm_configure: B2S_ConfirmNotify, /, *, minimal_headers: bool
+) -> Union[bytes, bytearray, memoryview]:
+    return serialize_simple_message(
+        type=confirm_configure.type,
+        header_names=_headers,
+        header_values=(
+            confirm_configure.identifier,
+            int_to_minimal_unsigned(confirm_configure.subscribers),
+        ),
+        payload=b"",
+        minimal_headers=minimal_headers,
+    )

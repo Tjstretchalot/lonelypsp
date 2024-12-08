@@ -86,6 +86,10 @@ class S2B_ConfigureParser:
         )
 
 
+if TYPE_CHECKING:
+    _: Type[S2B_MessageParser[S2B_Configure]] = S2B_ConfigureParser
+
+
 def serialize_s2b_configure(
     configure: S2B_Configure, /, *, minimal_headers: bool
 ) -> Union[bytes, bytearray, memoryview]:
@@ -101,7 +105,3 @@ def serialize_s2b_configure(
         payload=b"",
         minimal_headers=minimal_headers,
     )
-
-
-if TYPE_CHECKING:
-    _: Type[S2B_MessageParser[S2B_Configure]] = S2B_ConfigureParser
