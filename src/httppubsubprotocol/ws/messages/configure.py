@@ -89,18 +89,15 @@ class S2B_ConfigureParser:
 def serialize_s2b_configure(
     configure: S2B_Configure, /, *, minimal_headers: bool
 ) -> Union[bytes, bytearray, memoryview]:
-    """Serializes the given subscriber -> broadcaster configure message into the
-    bytes payload of the websocket message
-    """
     return serialize_simple_message(
         type=configure.type,
         header_names=_headers,
-        header_values=[
+        header_values=(
             configure.subscriber_nonce,
             b"\x01" if configure.enable_zstd else b"\x00",
             b"\x01" if configure.enable_training else b"\x00",
             configure.initial_dict.to_bytes(2, "big"),
-        ],
+        ),
         payload=b"",
         minimal_headers=minimal_headers,
     )
