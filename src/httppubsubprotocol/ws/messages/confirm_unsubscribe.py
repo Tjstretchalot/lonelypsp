@@ -127,7 +127,7 @@ if TYPE_CHECKING:
     )
 
 
-def serialize_b2s_confirm_subscribe_glob(
+def serialize_b2s_confirm_unsubscribe_glob(
     msg: B2S_ConfirmUnsubscribeGlob, /, *, minimal_headers: bool
 ) -> Union[bytes, bytearray, memoryview]:
     """Satisfies MessageSerializer[B2S_ConfirmUnsubscribeGlob]"""
@@ -142,7 +142,7 @@ def serialize_b2s_confirm_subscribe_glob(
 
 if TYPE_CHECKING:
     ____: MessageSerializer[B2S_ConfirmUnsubscribeGlob] = (
-        serialize_b2s_confirm_subscribe_glob
+        serialize_b2s_confirm_unsubscribe_glob
     )
 
 

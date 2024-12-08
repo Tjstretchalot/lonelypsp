@@ -74,6 +74,9 @@ class PreallocatedBytesIO:
         self.pos = 0
 
     def read(self, n: int) -> bytes:
+        if n < 0:
+            n = len(self.buffer) - self.pos
+
         result = self.buffer[self.pos : self.pos + n]
         self.pos = min(self.pos + n, len(self.buffer))
         return result

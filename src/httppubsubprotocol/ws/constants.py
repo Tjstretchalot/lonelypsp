@@ -2,6 +2,12 @@ from enum import IntEnum, IntFlag, auto
 
 
 class PubSubWSMessageFlags(IntFlag):
+    # Examples of flags we might want to add in the future, should the need arise:
+    # - huge headers (2 -> 4 bytes for length, allows for huge topic names)
+    # - extensions (e.g., alternative compression algorithms)
+    # - forward support flags / backward support flags (as alt. to expanded headers)
+    #   forward support meaning enable an experimental feature
+    #   backward support meaning enable a removed feature
     MINIMAL_HEADERS = 1 << 0
     """Our websocket message bodies include a headers section. This is not
     related to the headers within the HTTP / WS protocol. Our headers take one
@@ -376,10 +382,10 @@ class BroadcasterToSubscriberWSMessageType(IntEnum):
     x-compression-level: what compression level the broadcaster will use with
         this dictionary. signed, big-endian, max 2 bytes, max 22. the subscriber
         is free to choose a different compression level
-    x-min-size: 4 bytes, big-endian, unsigned. a hint to the subscriber for the smallest
+    x-min-size: max 4 bytes, big-endian, unsigned. a hint to the subscriber for the smallest
         payload the broadcaster will apply this compressor to. the subscriber can use this
         compressor on smaller messages if it wants
-    x-max-size: 8 bytes, big-endian, unsigned. a hint to the susbcriber for the largest
+    x-max-size: max 8 bytes, big-endian, unsigned. a hint to the subscriber for the largest
         payload for which the broadcaster will use this compressor. uses 2**64-1 to indicate
         no upper bound. the client can use this compressor on larger messages if it wants
 

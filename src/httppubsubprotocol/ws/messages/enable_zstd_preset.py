@@ -1,8 +1,18 @@
-from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
 
-from httppubsubprotocol.ws.constants import BroadcasterToSubscriberWSMessageType
+from httppubsubprotocol.sync_io import SyncReadableBytesIO
+from httppubsubprotocol.ws.constants import (
+    BroadcasterToSubscriberWSMessageType,
+    PubSubWSMessageFlags,
+)
 from httppubsubprotocol.compat import fast_dataclass
+from httppubsubprotocol.ws.generic_parser import B2S_MessageParser
+from httppubsubprotocol.ws.parser_helpers import parse_simple_headers
+from httppubsubprotocol.ws.serializer_helpers import (
+    MessageSerializer,
+    int_to_minimal_unsigned,
+    serialize_simple_message,
+)
 
 
 @fast_dataclass
@@ -37,3 +47,87 @@ class B2S_EnableZstdPreset:
     this preset; the subscriber is free to ignore this recommendation. 2**64-1
     for no limit
     """
+
+
+_headers: Collection[str] = (
+    "x-identifier",
+    "x-compression-level",
+    "x-min-size",
+    "x-max-size",
+)
+
+
+class B2S_EnableZstdPresetParser:
+    """Satisfies B2S_MessageParser[B2S_EnableZstdPreset]"""
+
+    @classmethod
+    def relevant_types(cls) -> List[BroadcasterToSubscriberWSMessageType]:
+        return [BroadcasterToSubscriberWSMessageType.ENABLE_ZSTD_PRESET]
+
+    @classmethod
+    def parse(
+        cls,
+        flags: PubSubWSMessageFlags,
+        type: BroadcasterToSubscriberWSMessageType,
+        payload: SyncReadableBytesIO,
+    ) -> B2S_EnableZstdPreset:
+        assert type == BroadcasterToSubscriberWSMessageType.ENABLE_ZSTD_PRESET
+
+        headers = parse_simple_headers(flags, payload, _headers)
+        identifier_bytes = headers["x-identifier"]
+        if len(identifier_bytes) > 8:
+            raise ValueError("x-identifier must be at most 8 bytes")
+
+        identifier = int.from_bytes(identifier_bytes)
+
+        compression_level_bytes = headers["x-compression-level"]
+        if len(compression_level_bytes) > 2:
+            raise ValueError("x-compression-level max 2 bytes")
+
+        compression_level = int.from_bytes(compression_level_bytes, signed=True)
+
+        min_size_bytes = headers["x-min-size"]
+        if len(min_size_bytes) > 4:
+            raise ValueError("x-min-size max 4 bytes")
+
+        min_size = int.from_bytes(min_size_bytes)
+
+        max_size_bytes = headers["x-max-size"]
+        if len(max_size_bytes) > 8:
+            raise ValueError("x-max-size max 8 bytes")
+
+        max_size = int.from_bytes(max_size_bytes)
+
+        return B2S_EnableZstdPreset(
+            type=type,
+            identifier=identifier,
+            compression_level=compression_level,
+            min_size=min_size,
+            max_size=max_size,
+        )
+
+
+if TYPE_CHECKING:
+    _: Type[B2S_MessageParser[B2S_EnableZstdPreset]] = B2S_EnableZstdPresetParser
+
+
+def serialize_b2s_enable_zstd_preset(
+    msg: B2S_EnableZstdPreset, /, *, minimal_headers: bool
+) -> Union[bytes, bytearray, memoryview]:
+    """Satisfies MessageSerializer[B2S_EnableZstdPreset]"""
+    return serialize_simple_message(
+        type=msg.type,
+        header_names=_headers,
+        header_values=(
+            int_to_minimal_unsigned(msg.identifier),
+            msg.compression_level.to_bytes(2, "big", signed=True),
+            int_to_minimal_unsigned(msg.min_size),
+            int_to_minimal_unsigned(msg.max_size),
+        ),
+        payload=b"",
+        minimal_headers=minimal_headers,
+    )
+
+
+if TYPE_CHECKING:
+    __: MessageSerializer[B2S_EnableZstdPreset] = serialize_b2s_enable_zstd_preset
