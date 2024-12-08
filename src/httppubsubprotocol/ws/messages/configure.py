@@ -9,7 +9,10 @@ from httppubsubprotocol.ws.constants import (
 from httppubsubprotocol.ws.generic_parser import S2B_MessageParser
 from httppubsubprotocol.ws.parser_helpers import parse_simple_headers
 from httppubsubprotocol.compat import fast_dataclass
-from httppubsubprotocol.ws.serializer_helpers import serialize_simple_message
+from httppubsubprotocol.ws.serializer_helpers import (
+    MessageSerializer,
+    serialize_simple_message,
+)
 
 
 @fast_dataclass
@@ -91,17 +94,22 @@ if TYPE_CHECKING:
 
 
 def serialize_s2b_configure(
-    configure: S2B_Configure, /, *, minimal_headers: bool
+    msg: S2B_Configure, /, *, minimal_headers: bool
 ) -> Union[bytes, bytearray, memoryview]:
+    """Satisfies MessageSerializer[S2B_Configure]"""
     return serialize_simple_message(
-        type=configure.type,
+        type=msg.type,
         header_names=_headers,
         header_values=(
-            configure.subscriber_nonce,
-            b"\x01" if configure.enable_zstd else b"\x00",
-            b"\x01" if configure.enable_training else b"\x00",
-            configure.initial_dict.to_bytes(2, "big"),
+            msg.subscriber_nonce,
+            b"\x01" if msg.enable_zstd else b"\x00",
+            b"\x01" if msg.enable_training else b"\x00",
+            msg.initial_dict.to_bytes(2, "big"),
         ),
         payload=b"",
         minimal_headers=minimal_headers,
     )
+
+
+if TYPE_CHECKING:
+    __: MessageSerializer[S2B_Configure] = serialize_s2b_configure

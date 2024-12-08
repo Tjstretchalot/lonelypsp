@@ -9,6 +9,7 @@ from httppubsubprotocol.compat import fast_dataclass
 from httppubsubprotocol.ws.generic_parser import B2S_MessageParser
 from httppubsubprotocol.ws.parser_helpers import parse_simple_headers
 from httppubsubprotocol.ws.serializer_helpers import (
+    MessageSerializer,
     int_to_minimal_unsigned,
     serialize_simple_message,
 )
@@ -40,7 +41,7 @@ class B2S_ConfirmNotifyParser:
 
     @classmethod
     def relevant_types(cls) -> List[BroadcasterToSubscriberWSMessageType]:
-        return [BroadcasterToSubscriberWSMessageType.CONFIRM_CONFIGURE]
+        return [BroadcasterToSubscriberWSMessageType.CONFIRM_NOTIFY]
 
     @classmethod
     def parse(
@@ -74,15 +75,20 @@ if TYPE_CHECKING:
 
 
 def serialize_b2s_confirm_notify(
-    confirm_configure: B2S_ConfirmNotify, /, *, minimal_headers: bool
+    msg: B2S_ConfirmNotify, /, *, minimal_headers: bool
 ) -> Union[bytes, bytearray, memoryview]:
+    """Satisfies MessageSerializer[B2S_ConfirmNotify]"""
     return serialize_simple_message(
-        type=confirm_configure.type,
+        type=msg.type,
         header_names=_headers,
         header_values=(
-            confirm_configure.identifier,
-            int_to_minimal_unsigned(confirm_configure.subscribers),
+            msg.identifier,
+            int_to_minimal_unsigned(msg.subscribers),
         ),
         payload=b"",
         minimal_headers=minimal_headers,
     )
+
+
+if TYPE_CHECKING:
+    __: MessageSerializer[B2S_ConfirmNotify] = serialize_b2s_confirm_notify

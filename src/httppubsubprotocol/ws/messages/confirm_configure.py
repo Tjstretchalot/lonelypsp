@@ -8,7 +8,10 @@ from httppubsubprotocol.ws.constants import (
 from httppubsubprotocol.compat import fast_dataclass
 from httppubsubprotocol.ws.generic_parser import B2S_MessageParser
 from httppubsubprotocol.ws.parser_helpers import parse_simple_headers
-from httppubsubprotocol.ws.serializer_helpers import serialize_simple_message
+from httppubsubprotocol.ws.serializer_helpers import (
+    MessageSerializer,
+    serialize_simple_message,
+)
 
 
 @fast_dataclass
@@ -60,12 +63,17 @@ if TYPE_CHECKING:
 
 
 def serialize_b2s_confirm_configure(
-    confirm_configure: B2S_ConfirmConfigure, /, *, minimal_headers: bool
+    msg: B2S_ConfirmConfigure, /, *, minimal_headers: bool
 ) -> Union[bytes, bytearray, memoryview]:
+    """Satisfies MessageSerializer[B2S_ConfirmConfigure]"""
     return serialize_simple_message(
-        type=confirm_configure.type,
+        type=msg.type,
         header_names=_headers,
-        header_values=(confirm_configure.broadcaster_nonce,),
+        header_values=(msg.broadcaster_nonce,),
         payload=b"",
         minimal_headers=minimal_headers,
     )
+
+
+if TYPE_CHECKING:
+    __: MessageSerializer[B2S_ConfirmConfigure] = serialize_b2s_confirm_configure

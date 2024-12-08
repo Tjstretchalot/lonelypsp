@@ -1,4 +1,4 @@
-from typing import Collection, Union
+from typing import Collection, Generic, Protocol, TypeVar, Union
 from httppubsubprotocol.sync_io import PreallocatedBytesIO, SyncWritableBytesIO
 from httppubsubprotocol.ws.constants import (
     BroadcasterToSubscriberWSMessageType,
@@ -117,10 +117,33 @@ def serialize_simple_message(
 def int_to_minimal_unsigned(n: int) -> bytes:
     """Converts an integer to a minimal unsigned byte representation. In order
     to parse this the parser will need to know the length in bytes from the protocol,
-    e.g., because its a header value.
+    e.g., because it's a header value.
 
     Result is big-endian encoded
     """
     assert n >= 0
     bit_length = (n.bit_length() - 1) // 8 + 1
     return n.to_bytes(bit_length)
+
+
+T_contra = TypeVar("T_contra", contravariant=True)
+
+
+class MessageSerializer(Generic[T_contra], Protocol):
+    """The protocol the serializer functions should satisfy, to ensure we
+    are being consistent
+    """
+
+    def __call__(
+        self, msg: T_contra, /, *, minimal_headers: bool
+    ) -> Union[bytes, bytearray, memoryview]:
+        """Serializes the given message into the bytes to send within a websocket
+        bytes message.
+
+        Args:
+            msg: The message to serialize
+            minimal_headers: True to use minimal headers, False to use expanded headers.
+                Generally this is configured individually by broadcasters and subscribers,
+                and only turned off as part of the process of updating the protocol before
+                being turned back on when everything is on the same version.
+        """
