@@ -123,7 +123,7 @@ def int_to_minimal_unsigned(n: int) -> bytes:
     """
     assert n >= 0
     bit_length = (n.bit_length() - 1) // 8 + 1
-    return n.to_bytes(bit_length)
+    return n.to_bytes(bit_length, "big")
 
 
 T_contra = TypeVar("T_contra", contravariant=True)
