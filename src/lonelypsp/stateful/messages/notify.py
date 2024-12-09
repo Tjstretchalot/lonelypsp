@@ -2,14 +2,14 @@ import hashlib
 from typing import TYPE_CHECKING, Collection, List, Literal, Optional, Type, Union
 
 from lonelypsp.sync_io import SyncReadableBytesIO
-from lonelypsp.ws.constants import (
-    PubSubWSMessageFlags,
-    SubscriberToBroadcasterWSMessageType,
+from lonelypsp.stateful.constants import (
+    PubSubStatefulMessageFlags,
+    SubscriberToBroadcasterStatefulMessageType,
 )
 from lonelypsp.compat import fast_dataclass
-from lonelypsp.ws.generic_parser import S2B_MessageParser
-from lonelypsp.ws.parser_helpers import parse_simple_headers
-from lonelypsp.ws.serializer_helpers import (
+from lonelypsp.stateful.generic_parser import S2B_MessageParser
+from lonelypsp.stateful.parser_helpers import parse_simple_headers
+from lonelypsp.stateful.serializer_helpers import (
     MessageSerializer,
     int_to_minimal_unsigned,
     serialize_simple_message,
@@ -23,7 +23,7 @@ class S2B_NotifyUncompressed:
     See the type enum documentation for more information on the fields
     """
 
-    type: Literal[SubscriberToBroadcasterWSMessageType.NOTIFY]
+    type: Literal[SubscriberToBroadcasterStatefulMessageType.NOTIFY]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -59,7 +59,7 @@ class S2B_NotifyCompressed:
     See the type enum documentation for more information on the fields
     """
 
-    type: Literal[SubscriberToBroadcasterWSMessageType.NOTIFY]
+    type: Literal[SubscriberToBroadcasterStatefulMessageType.NOTIFY]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -107,17 +107,17 @@ class S2B_NotifyParser:
     """Satisfies S2B_MessageParser[S2B_Notify]"""
 
     @classmethod
-    def relevant_types(cls) -> List[SubscriberToBroadcasterWSMessageType]:
-        return [SubscriberToBroadcasterWSMessageType.NOTIFY]
+    def relevant_types(cls) -> List[SubscriberToBroadcasterStatefulMessageType]:
+        return [SubscriberToBroadcasterStatefulMessageType.NOTIFY]
 
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: SubscriberToBroadcasterWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: SubscriberToBroadcasterStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> S2B_Notify:
-        assert type == SubscriberToBroadcasterWSMessageType.NOTIFY
+        assert type == SubscriberToBroadcasterStatefulMessageType.NOTIFY
 
         headers = parse_simple_headers(flags, payload, _headers)
 

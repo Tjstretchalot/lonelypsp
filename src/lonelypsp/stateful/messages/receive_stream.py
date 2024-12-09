@@ -11,18 +11,18 @@ from typing import (
 )
 
 from lonelypsp.sync_io import SyncReadableBytesIO
-from lonelypsp.ws.constants import (
-    BroadcasterToSubscriberWSMessageType,
-    PubSubWSMessageFlags,
+from lonelypsp.stateful.constants import (
+    BroadcasterToSubscriberStatefulMessageType,
+    PubSubStatefulMessageFlags,
 )
 from lonelypsp.compat import fast_dataclass
-from lonelypsp.ws.generic_parser import B2S_MessageParser
-from lonelypsp.ws.parser_helpers import (
+from lonelypsp.stateful.generic_parser import B2S_MessageParser
+from lonelypsp.stateful.parser_helpers import (
     GeneratorContextManager,
     parse_expanded_headers,
     parse_minimal_message_headers,
 )
-from lonelypsp.ws.serializer_helpers import (
+from lonelypsp.stateful.serializer_helpers import (
     MessageSerializer,
     int_to_minimal_unsigned,
     serialize_simple_message,
@@ -38,7 +38,7 @@ class B2S_ReceiveStreamStartUncompressed:
     This type is for when x-part-id is 0 and x-compressor is 0
     """
 
-    type: Literal[BroadcasterToSubscriberWSMessageType.RECEIVE_STREAM]
+    type: Literal[BroadcasterToSubscriberStatefulMessageType.RECEIVE_STREAM]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -84,7 +84,7 @@ class B2S_ReceiveStreamStartCompressed:
     This type is for when x-part-id is 0 and x-compressor is not 0
     """
 
-    type: Literal[BroadcasterToSubscriberWSMessageType.RECEIVE_STREAM]
+    type: Literal[BroadcasterToSubscriberStatefulMessageType.RECEIVE_STREAM]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -133,7 +133,7 @@ class B2S_ReceiveStreamContinuation:
     This type is for when x-part-id is not 0
     """
 
-    type: Literal[BroadcasterToSubscriberWSMessageType.RECEIVE_STREAM]
+    type: Literal[BroadcasterToSubscriberStatefulMessageType.RECEIVE_STREAM]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -184,20 +184,20 @@ class B2S_ReceiveStreamParser:
     """Satisfies B2S_MessageParser[B2S_ReceiveStream]"""
 
     @classmethod
-    def relevant_types(cls) -> List[BroadcasterToSubscriberWSMessageType]:
-        return [BroadcasterToSubscriberWSMessageType.RECEIVE_STREAM]
+    def relevant_types(cls) -> List[BroadcasterToSubscriberStatefulMessageType]:
+        return [BroadcasterToSubscriberStatefulMessageType.RECEIVE_STREAM]
 
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: BroadcasterToSubscriberWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: BroadcasterToSubscriberStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> B2S_ReceiveStream:
-        assert type == BroadcasterToSubscriberWSMessageType.RECEIVE_STREAM
+        assert type == BroadcasterToSubscriberStatefulMessageType.RECEIVE_STREAM
         headers: Dict[str, bytes] = dict()
 
-        if (flags & PubSubWSMessageFlags.MINIMAL_HEADERS) != 0:
+        if (flags & PubSubStatefulMessageFlags.MINIMAL_HEADERS) != 0:
             with GeneratorContextManager(
                 parse_minimal_message_headers(payload)
             ) as parser:

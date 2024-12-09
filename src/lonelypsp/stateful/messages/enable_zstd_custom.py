@@ -1,14 +1,14 @@
 from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
 
 from lonelypsp.sync_io import SyncReadableBytesIO
-from lonelypsp.ws.constants import (
-    BroadcasterToSubscriberWSMessageType,
-    PubSubWSMessageFlags,
+from lonelypsp.stateful.constants import (
+    BroadcasterToSubscriberStatefulMessageType,
+    PubSubStatefulMessageFlags,
 )
 from lonelypsp.compat import fast_dataclass
-from lonelypsp.ws.generic_parser import B2S_MessageParser
-from lonelypsp.ws.parser_helpers import parse_simple_headers
-from lonelypsp.ws.serializer_helpers import (
+from lonelypsp.stateful.generic_parser import B2S_MessageParser
+from lonelypsp.stateful.parser_helpers import parse_simple_headers
+from lonelypsp.stateful.serializer_helpers import (
     MessageSerializer,
     int_to_minimal_unsigned,
     serialize_simple_message,
@@ -22,7 +22,7 @@ class B2S_EnableZstdCustom:
     See the type enum documentation for more information on the fields
     """
 
-    type: Literal[BroadcasterToSubscriberWSMessageType.ENABLE_ZSTD_CUSTOM]
+    type: Literal[BroadcasterToSubscriberStatefulMessageType.ENABLE_ZSTD_CUSTOM]
     """discriminator value"""
 
     identifier: int
@@ -65,17 +65,17 @@ class B2S_EnableZstdCustomParser:
     """Satisfies B2S_MessageParser[B2S_EnableZstdCustom]"""
 
     @classmethod
-    def relevant_types(cls) -> List[BroadcasterToSubscriberWSMessageType]:
-        return [BroadcasterToSubscriberWSMessageType.ENABLE_ZSTD_CUSTOM]
+    def relevant_types(cls) -> List[BroadcasterToSubscriberStatefulMessageType]:
+        return [BroadcasterToSubscriberStatefulMessageType.ENABLE_ZSTD_CUSTOM]
 
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: BroadcasterToSubscriberWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: BroadcasterToSubscriberStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> B2S_EnableZstdCustom:
-        assert type == BroadcasterToSubscriberWSMessageType.ENABLE_ZSTD_CUSTOM
+        assert type == BroadcasterToSubscriberStatefulMessageType.ENABLE_ZSTD_CUSTOM
 
         headers = parse_simple_headers(flags, payload, _headers)
         identifier_bytes = headers["x-identifier"]

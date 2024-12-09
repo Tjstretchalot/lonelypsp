@@ -1,7 +1,7 @@
 from enum import IntEnum, IntFlag, auto
 
 
-class PubSubWSMessageFlags(IntFlag):
+class PubSubStatefulMessageFlags(IntFlag):
     # Examples of flags we might want to add in the future, should the need arise:
     # - huge headers (2 -> 4 bytes for length, allows for huge topic names)
     # - extensions (e.g., alternative compression algorithms)
@@ -29,9 +29,9 @@ class PubSubWSMessageFlags(IntFlag):
     """
 
 
-class SubscriberToBroadcasterWSMessageType(IntEnum):
+class SubscriberToBroadcasterStatefulMessageType(IntEnum):
     """Assigns a unique integer to each type of message that a subscriber can
-    send to a broadcaster.
+    send to a broadcaster over the stateful protocol
     """
 
     CONFIGURE = auto()
@@ -186,7 +186,7 @@ class SubscriberToBroadcasterWSMessageType(IntEnum):
     """
 
 
-class BroadcasterToSubscriberWSMessageType(IntEnum):
+class BroadcasterToSubscriberStatefulMessageType(IntEnum):
     """Assigns a unique integer to each type of message that a broadcaster can
     send to a subscriber.
     """

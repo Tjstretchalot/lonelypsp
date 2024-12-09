@@ -2,14 +2,14 @@ import io
 from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
 
 from lonelypsp.sync_io import SyncReadableBytesIO
-from lonelypsp.ws.constants import (
-    PubSubWSMessageFlags,
-    SubscriberToBroadcasterWSMessageType,
+from lonelypsp.stateful.constants import (
+    PubSubStatefulMessageFlags,
+    SubscriberToBroadcasterStatefulMessageType,
 )
-from lonelypsp.ws.generic_parser import S2B_MessageParser
-from lonelypsp.ws.parser_helpers import parse_simple_headers
+from lonelypsp.stateful.generic_parser import S2B_MessageParser
+from lonelypsp.stateful.parser_helpers import parse_simple_headers
 from lonelypsp.compat import fast_dataclass
-from lonelypsp.ws.serializer_helpers import (
+from lonelypsp.stateful.serializer_helpers import (
     MessageSerializer,
     serialize_simple_message,
 )
@@ -23,7 +23,7 @@ class S2B_Configure:
     See the type enum documentation for more information on the fields
     """
 
-    type: Literal[SubscriberToBroadcasterWSMessageType.CONFIGURE]
+    type: Literal[SubscriberToBroadcasterStatefulMessageType.CONFIGURE]
     """discriminator value"""
 
     subscriber_nonce: bytes
@@ -52,17 +52,17 @@ class S2B_ConfigureParser:
     """Satisfies S2B_MessageParser[S2B_Configure]"""
 
     @classmethod
-    def relevant_types(cls) -> List[SubscriberToBroadcasterWSMessageType]:
-        return [SubscriberToBroadcasterWSMessageType.CONFIGURE]
+    def relevant_types(cls) -> List[SubscriberToBroadcasterStatefulMessageType]:
+        return [SubscriberToBroadcasterStatefulMessageType.CONFIGURE]
 
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: SubscriberToBroadcasterWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: SubscriberToBroadcasterStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> S2B_Configure:
-        assert type == SubscriberToBroadcasterWSMessageType.CONFIGURE
+        assert type == SubscriberToBroadcasterStatefulMessageType.CONFIGURE
 
         headers = parse_simple_headers(flags, payload, _headers)
         subscriber_nonce = headers["x-subscriber-nonce"]

@@ -11,18 +11,18 @@ from typing import (
 )
 
 from lonelypsp.sync_io import SyncReadableBytesIO
-from lonelypsp.ws.constants import (
-    PubSubWSMessageFlags,
-    SubscriberToBroadcasterWSMessageType,
+from lonelypsp.stateful.constants import (
+    PubSubStatefulMessageFlags,
+    SubscriberToBroadcasterStatefulMessageType,
 )
 from lonelypsp.compat import fast_dataclass
-from lonelypsp.ws.generic_parser import S2B_MessageParser
-from lonelypsp.ws.parser_helpers import (
+from lonelypsp.stateful.generic_parser import S2B_MessageParser
+from lonelypsp.stateful.parser_helpers import (
     GeneratorContextManager,
     parse_expanded_headers,
     parse_minimal_message_headers,
 )
-from lonelypsp.ws.serializer_helpers import (
+from lonelypsp.stateful.serializer_helpers import (
     MessageSerializer,
     int_to_minimal_unsigned,
     serialize_simple_message,
@@ -38,7 +38,7 @@ class S2B_NotifyStreamStartUncompressed:
     This type is for when x-part-id is 0 and x-compressor is 0
     """
 
-    type: Literal[SubscriberToBroadcasterWSMessageType.NOTIFY_STREAM]
+    type: Literal[SubscriberToBroadcasterStatefulMessageType.NOTIFY_STREAM]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -84,7 +84,7 @@ class S2B_NotifyStreamStartCompressed:
     This type is for when x-part-id is 0 and x-compressor is not 0
     """
 
-    type: Literal[SubscriberToBroadcasterWSMessageType.NOTIFY_STREAM]
+    type: Literal[SubscriberToBroadcasterStatefulMessageType.NOTIFY_STREAM]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -133,7 +133,7 @@ class S2B_NotifyStreamContinuation:
     This type is for when x-part-id is not 0
     """
 
-    type: Literal[SubscriberToBroadcasterWSMessageType.NOTIFY_STREAM]
+    type: Literal[SubscriberToBroadcasterStatefulMessageType.NOTIFY_STREAM]
     """discriminator value"""
 
     authorization: Optional[str]
@@ -183,20 +183,20 @@ class S2B_NotifyStreamParser:
     """Satisfies S2B_MessageParser[S2B_NotifyStream]"""
 
     @classmethod
-    def relevant_types(cls) -> List[SubscriberToBroadcasterWSMessageType]:
-        return [SubscriberToBroadcasterWSMessageType.NOTIFY_STREAM]
+    def relevant_types(cls) -> List[SubscriberToBroadcasterStatefulMessageType]:
+        return [SubscriberToBroadcasterStatefulMessageType.NOTIFY_STREAM]
 
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: SubscriberToBroadcasterWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: SubscriberToBroadcasterStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> S2B_NotifyStream:
-        assert type == SubscriberToBroadcasterWSMessageType.NOTIFY_STREAM
+        assert type == SubscriberToBroadcasterStatefulMessageType.NOTIFY_STREAM
         headers: Dict[str, bytes] = dict()
 
-        if (flags & PubSubWSMessageFlags.MINIMAL_HEADERS) != 0:
+        if (flags & PubSubStatefulMessageFlags.MINIMAL_HEADERS) != 0:
             with GeneratorContextManager(
                 parse_minimal_message_headers(payload)
             ) as parser:

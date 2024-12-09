@@ -37,27 +37,27 @@ Parsing:
 ```python
 import io
 
-from lonelypsp.ws.parser import S2B_AnyMessageParser
-from lonelypsp.ws.parser_helpers import parse_s2b_message_prefix
+from lonelypsp.stateful.parser import S2B_AnyMessageParser
+from lonelypsp.stateful.parser_helpers import parse_s2b_message_prefix
 
 
 message_body: io.BytesIO = ...
 prefix = parse_s2b_message_prefix(message_body)
 message = S2B_AnyMessageParser.parse(prefix.flags, prefix.type, message_body)
 
-if message.type == SubscriberToBroadcasterWSMessageType.SUBSCRIBE_EXACT:
+if message.type == SubscriberToBroadcasterStatefulMessageType.SUBSCRIBE_EXACT:
     print(message.topic)
 ```
 
 Serialization:
 
 ```python
-from lonelypsp.ws.constants import SubscriberToBroadcasterWSMessageType
-from lonelypsp.ws.messages.subscribe import S2B_SubscribeExact, serialize_s2b_subscribe_exact
+from lonelypsp.stateful.constants import SubscriberToBroadcasterStatefulMessageType
+from lonelypsp.stateful.messages.subscribe import S2B_SubscribeExact, serialize_s2b_subscribe_exact
 
 message = serialize_s2b_subscribe_exact(
     S2B_SubscribeExact(
-        type=SubscriberToBroadcasterWSMessageType.SUBSCRIBE_EXACT,
+        type=SubscriberToBroadcasterStatefulMessageType.SUBSCRIBE_EXACT,
         authorization=None,
         topic=b"foo/bar",
     ),

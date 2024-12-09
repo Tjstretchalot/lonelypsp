@@ -1,16 +1,17 @@
 from typing import Collection, Generic, Protocol, TypeVar, Union
 from lonelypsp.sync_io import PreallocatedBytesIO, SyncWritableBytesIO
-from lonelypsp.ws.constants import (
-    BroadcasterToSubscriberWSMessageType,
-    PubSubWSMessageFlags,
-    SubscriberToBroadcasterWSMessageType,
+from lonelypsp.stateful.constants import (
+    BroadcasterToSubscriberStatefulMessageType,
+    PubSubStatefulMessageFlags,
+    SubscriberToBroadcasterStatefulMessageType,
 )
 
 
 def serialize_prefix(
     out: SyncWritableBytesIO,
     type: Union[
-        SubscriberToBroadcasterWSMessageType, BroadcasterToSubscriberWSMessageType
+        SubscriberToBroadcasterStatefulMessageType,
+        BroadcasterToSubscriberStatefulMessageType,
     ],
     /,
     *,
@@ -19,7 +20,9 @@ def serialize_prefix(
     """Writes the message flags and the type of message to the output stream."""
     out.write(
         int.to_bytes(
-            PubSubWSMessageFlags.MINIMAL_HEADERS if minimal_headers else 0, 2, "big"
+            PubSubStatefulMessageFlags.MINIMAL_HEADERS if minimal_headers else 0,
+            2,
+            "big",
         )
     )
     out.write(int.to_bytes(type, 2, "big"))
@@ -80,7 +83,8 @@ def serialize_simple_headers(
 def serialize_simple_message(
     *,
     type: Union[
-        SubscriberToBroadcasterWSMessageType, BroadcasterToSubscriberWSMessageType
+        SubscriberToBroadcasterStatefulMessageType,
+        BroadcasterToSubscriberStatefulMessageType,
     ],
     header_names: Collection[str],
     header_values: Collection[bytes],

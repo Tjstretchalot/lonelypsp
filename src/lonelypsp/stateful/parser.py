@@ -1,37 +1,37 @@
 from typing import TYPE_CHECKING, List, Optional, Sequence, Type
 
 from lonelypsp.sync_io import SyncReadableBytesIO
-from lonelypsp.ws.constants import (
-    BroadcasterToSubscriberWSMessageType,
-    PubSubWSMessageFlags,
-    SubscriberToBroadcasterWSMessageType,
+from lonelypsp.stateful.constants import (
+    BroadcasterToSubscriberStatefulMessageType,
+    PubSubStatefulMessageFlags,
+    SubscriberToBroadcasterStatefulMessageType,
 )
-from lonelypsp.ws.generic_parser import B2S_MessageParser, S2B_MessageParser
-from lonelypsp.ws.message import S2B_Message, B2S_Message
-from lonelypsp.ws.messages.configure import S2B_ConfigureParser
-from lonelypsp.ws.messages.confirm_configure import B2S_ConfirmConfigureParser
-from lonelypsp.ws.messages.confirm_notify import B2S_ConfirmNotifyParser
-from lonelypsp.ws.messages.confirm_receive import S2B_ConfirmRecieveParser
-from lonelypsp.ws.messages.confirm_subscribe import (
+from lonelypsp.stateful.generic_parser import B2S_MessageParser, S2B_MessageParser
+from lonelypsp.stateful.message import S2B_Message, B2S_Message
+from lonelypsp.stateful.messages.configure import S2B_ConfigureParser
+from lonelypsp.stateful.messages.confirm_configure import B2S_ConfirmConfigureParser
+from lonelypsp.stateful.messages.confirm_notify import B2S_ConfirmNotifyParser
+from lonelypsp.stateful.messages.confirm_receive import S2B_ConfirmRecieveParser
+from lonelypsp.stateful.messages.confirm_subscribe import (
     B2S_ConfirmSubscribeExactParser,
     B2S_ConfirmSubscribeGlobParser,
 )
-from lonelypsp.ws.messages.confirm_unsubscribe import (
+from lonelypsp.stateful.messages.confirm_unsubscribe import (
     B2S_ConfirmUnsubscribeExactParser,
     B2S_ConfirmUnsubscribeGlobParser,
 )
-from lonelypsp.ws.messages.continue_notify import B2S_ContinueNotifyParser
-from lonelypsp.ws.messages.continue_receive import S2B_ContinueReceiveParser
-from lonelypsp.ws.messages.enable_zstd_custom import B2S_EnableZstdCustomParser
-from lonelypsp.ws.messages.enable_zstd_preset import B2S_EnableZstdPresetParser
-from lonelypsp.ws.messages.notify import S2B_NotifyParser
-from lonelypsp.ws.messages.notify_stream import S2B_NotifyStreamParser
-from lonelypsp.ws.messages.receive_stream import B2S_ReceiveStreamParser
-from lonelypsp.ws.messages.subscribe import (
+from lonelypsp.stateful.messages.continue_notify import B2S_ContinueNotifyParser
+from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceiveParser
+from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustomParser
+from lonelypsp.stateful.messages.enable_zstd_preset import B2S_EnableZstdPresetParser
+from lonelypsp.stateful.messages.notify import S2B_NotifyParser
+from lonelypsp.stateful.messages.notify_stream import S2B_NotifyStreamParser
+from lonelypsp.stateful.messages.receive_stream import B2S_ReceiveStreamParser
+from lonelypsp.stateful.messages.subscribe import (
     S2B_SubscribeExactParser,
     S2B_SubscribeGlobParser,
 )
-from lonelypsp.ws.messages.unsubscribe import (
+from lonelypsp.stateful.messages.unsubscribe import (
     S2B_UnsubscribeExactParser,
     S2B_UnsubscribeGlobParser,
 )
@@ -104,7 +104,7 @@ class S2B_AnyMessageParser:
     """Satisfies S2B_MessageParser[S2B_Message]"""
 
     @classmethod
-    def relevant_types(cls) -> List[SubscriberToBroadcasterWSMessageType]:
+    def relevant_types(cls) -> List[SubscriberToBroadcasterStatefulMessageType]:
         result = []
         for parser in S2B_MESSAGE_PARSERS:
             result.extend(parser.relevant_types())
@@ -113,8 +113,8 @@ class S2B_AnyMessageParser:
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: SubscriberToBroadcasterWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: SubscriberToBroadcasterStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> S2B_Message:
         if type < 0:
@@ -165,7 +165,7 @@ class B2S_AnyMessageParser:
     """Satisfies B2S_MessageParser[B2S_Message]"""
 
     @classmethod
-    def relevant_types(cls) -> List[BroadcasterToSubscriberWSMessageType]:
+    def relevant_types(cls) -> List[BroadcasterToSubscriberStatefulMessageType]:
         result = []
         for parser in B2S_MESSAGE_PARSERS:
             result.extend(parser.relevant_types())
@@ -174,8 +174,8 @@ class B2S_AnyMessageParser:
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: BroadcasterToSubscriberWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: BroadcasterToSubscriberStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> B2S_Message:
         if type < 0:

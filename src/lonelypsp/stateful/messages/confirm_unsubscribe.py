@@ -1,14 +1,14 @@
 from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
 
 from lonelypsp.sync_io import SyncReadableBytesIO
-from lonelypsp.ws.constants import (
-    BroadcasterToSubscriberWSMessageType,
-    PubSubWSMessageFlags,
+from lonelypsp.stateful.constants import (
+    BroadcasterToSubscriberStatefulMessageType,
+    PubSubStatefulMessageFlags,
 )
 from lonelypsp.compat import fast_dataclass
-from lonelypsp.ws.generic_parser import B2S_MessageParser
-from lonelypsp.ws.parser_helpers import parse_simple_headers
-from lonelypsp.ws.serializer_helpers import (
+from lonelypsp.stateful.generic_parser import B2S_MessageParser
+from lonelypsp.stateful.parser_helpers import parse_simple_headers
+from lonelypsp.stateful.serializer_helpers import (
     MessageSerializer,
     serialize_simple_message,
 )
@@ -21,7 +21,7 @@ class B2S_ConfirmUnsubscribeExact:
     See the type enum documentation for more information on the fields
     """
 
-    type: Literal[BroadcasterToSubscriberWSMessageType.CONFIRM_UNSUBSCRIBE_EXACT]
+    type: Literal[BroadcasterToSubscriberStatefulMessageType.CONFIRM_UNSUBSCRIBE_EXACT]
     """discriminator value"""
 
     topic: bytes
@@ -35,17 +35,19 @@ class B2S_ConfirmUnsubscribeExactParser:
     """Satisfies B2S_MessageParser[B2S_ConfirmUnsubscribeExact]"""
 
     @classmethod
-    def relevant_types(cls) -> List[BroadcasterToSubscriberWSMessageType]:
-        return [BroadcasterToSubscriberWSMessageType.CONFIRM_UNSUBSCRIBE_EXACT]
+    def relevant_types(cls) -> List[BroadcasterToSubscriberStatefulMessageType]:
+        return [BroadcasterToSubscriberStatefulMessageType.CONFIRM_UNSUBSCRIBE_EXACT]
 
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: BroadcasterToSubscriberWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: BroadcasterToSubscriberStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> B2S_ConfirmUnsubscribeExact:
-        assert type == BroadcasterToSubscriberWSMessageType.CONFIRM_UNSUBSCRIBE_EXACT
+        assert (
+            type == BroadcasterToSubscriberStatefulMessageType.CONFIRM_UNSUBSCRIBE_EXACT
+        )
 
         headers = parse_simple_headers(flags, payload, _exact_headers)
         topic = headers["x-topic"]
@@ -87,7 +89,7 @@ class B2S_ConfirmUnsubscribeGlob:
     See the type enum documentation for more information on the fields
     """
 
-    type: Literal[BroadcasterToSubscriberWSMessageType.CONFIRM_UNSUBSCRIBE_GLOB]
+    type: Literal[BroadcasterToSubscriberStatefulMessageType.CONFIRM_UNSUBSCRIBE_GLOB]
     """discriminator value"""
 
     glob: str
@@ -101,17 +103,19 @@ class B2S_ConfirmUnsubscribeGlobParser:
     """Satisfies B2S_MessageParser[B2S_ConfirmUnsubscribeGlob]"""
 
     @classmethod
-    def relevant_types(cls) -> List[BroadcasterToSubscriberWSMessageType]:
-        return [BroadcasterToSubscriberWSMessageType.CONFIRM_UNSUBSCRIBE_GLOB]
+    def relevant_types(cls) -> List[BroadcasterToSubscriberStatefulMessageType]:
+        return [BroadcasterToSubscriberStatefulMessageType.CONFIRM_UNSUBSCRIBE_GLOB]
 
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: BroadcasterToSubscriberWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: BroadcasterToSubscriberStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> B2S_ConfirmUnsubscribeGlob:
-        assert type == BroadcasterToSubscriberWSMessageType.CONFIRM_UNSUBSCRIBE_GLOB
+        assert (
+            type == BroadcasterToSubscriberStatefulMessageType.CONFIRM_UNSUBSCRIBE_GLOB
+        )
 
         headers = parse_simple_headers(flags, payload, _glob_headers)
         glob = headers["x-glob"].decode("utf-8")

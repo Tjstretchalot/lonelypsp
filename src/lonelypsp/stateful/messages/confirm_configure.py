@@ -1,14 +1,14 @@
 from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
 
 from lonelypsp.sync_io import SyncReadableBytesIO
-from lonelypsp.ws.constants import (
-    BroadcasterToSubscriberWSMessageType,
-    PubSubWSMessageFlags,
+from lonelypsp.stateful.constants import (
+    BroadcasterToSubscriberStatefulMessageType,
+    PubSubStatefulMessageFlags,
 )
 from lonelypsp.compat import fast_dataclass
-from lonelypsp.ws.generic_parser import B2S_MessageParser
-from lonelypsp.ws.parser_helpers import parse_simple_headers
-from lonelypsp.ws.serializer_helpers import (
+from lonelypsp.stateful.generic_parser import B2S_MessageParser
+from lonelypsp.stateful.parser_helpers import parse_simple_headers
+from lonelypsp.stateful.serializer_helpers import (
     MessageSerializer,
     serialize_simple_message,
 )
@@ -21,7 +21,7 @@ class B2S_ConfirmConfigure:
     See the type enum documentation for more information on the fields
     """
 
-    type: Literal[BroadcasterToSubscriberWSMessageType.CONFIRM_CONFIGURE]
+    type: Literal[BroadcasterToSubscriberStatefulMessageType.CONFIRM_CONFIGURE]
     """discriminator value"""
 
     broadcaster_nonce: bytes
@@ -35,17 +35,17 @@ class B2S_ConfirmConfigureParser:
     """Satisfies B2S_MessageParser[B2S_ConfirmConfigure]"""
 
     @classmethod
-    def relevant_types(cls) -> List[BroadcasterToSubscriberWSMessageType]:
-        return [BroadcasterToSubscriberWSMessageType.CONFIRM_CONFIGURE]
+    def relevant_types(cls) -> List[BroadcasterToSubscriberStatefulMessageType]:
+        return [BroadcasterToSubscriberStatefulMessageType.CONFIRM_CONFIGURE]
 
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: BroadcasterToSubscriberWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: BroadcasterToSubscriberStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> B2S_ConfirmConfigure:
-        assert type == BroadcasterToSubscriberWSMessageType.CONFIRM_CONFIGURE
+        assert type == BroadcasterToSubscriberStatefulMessageType.CONFIRM_CONFIGURE
 
         headers = parse_simple_headers(flags, payload, _headers)
         broadcaster_nonce = headers["x-broadcaster-nonce"]

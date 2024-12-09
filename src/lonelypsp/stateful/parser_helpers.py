@@ -2,10 +2,10 @@ from types import TracebackType
 from typing import Dict, Generator, Generic, Iterable, Iterator, List, Type, TypeVar
 from lonelypsp.sync_io import SyncReadableBytesIO
 from lonelypsp.compat import fast_dataclass
-from lonelypsp.ws.constants import (
-    BroadcasterToSubscriberWSMessageType,
-    PubSubWSMessageFlags,
-    SubscriberToBroadcasterWSMessageType,
+from lonelypsp.stateful.constants import (
+    BroadcasterToSubscriberStatefulMessageType,
+    PubSubStatefulMessageFlags,
+    SubscriberToBroadcasterStatefulMessageType,
 )
 
 
@@ -18,10 +18,10 @@ class B2S_MessagePrefix:
     which are required to know how to parse the rest of the message
     """
 
-    flags: PubSubWSMessageFlags
+    flags: PubSubStatefulMessageFlags
     """bit flags for parsing the message"""
 
-    type: BroadcasterToSubscriberWSMessageType
+    type: BroadcasterToSubscriberStatefulMessageType
     """enum value describing the contents of the message"""
 
 
@@ -37,11 +37,11 @@ def parse_b2s_message_prefix(body: SyncReadableBytesIO) -> B2S_MessagePrefix:
     """
     flags_bytes = read_exact(body, 2)
     flags_int = int.from_bytes(flags_bytes, "big")
-    flags = PubSubWSMessageFlags(flags_int)
+    flags = PubSubStatefulMessageFlags(flags_int)
 
     message_type_bytes = read_exact(body, 2)
     message_type_int = int.from_bytes(message_type_bytes, "big")
-    message_type = BroadcasterToSubscriberWSMessageType(message_type_int)
+    message_type = BroadcasterToSubscriberStatefulMessageType(message_type_int)
 
     return B2S_MessagePrefix(flags, message_type)
 
@@ -55,10 +55,10 @@ class S2B_MessagePrefix:
     which are required to know how to parse the rest of the message
     """
 
-    flags: PubSubWSMessageFlags
+    flags: PubSubStatefulMessageFlags
     """bit flags for parsing the message"""
 
-    type: SubscriberToBroadcasterWSMessageType
+    type: SubscriberToBroadcasterStatefulMessageType
     """enum value describing the contents of the message"""
 
 
@@ -74,11 +74,11 @@ def parse_s2b_message_prefix(body: SyncReadableBytesIO) -> S2B_MessagePrefix:
     """
     flags_bytes = read_exact(body, 2)
     flags_int = int.from_bytes(flags_bytes, "big")
-    flags = PubSubWSMessageFlags(flags_int)
+    flags = PubSubStatefulMessageFlags(flags_int)
 
     message_type_bytes = read_exact(body, 2)
     message_type_int = int.from_bytes(message_type_bytes, "big")
-    message_type = SubscriberToBroadcasterWSMessageType(message_type_int)
+    message_type = SubscriberToBroadcasterStatefulMessageType(message_type_int)
 
     return S2B_MessagePrefix(flags, message_type)
 
@@ -177,7 +177,7 @@ def parse_expanded_headers(body: SyncReadableBytesIO) -> Dict[str, bytes]:
 
 
 def parse_simple_headers(
-    flags: PubSubWSMessageFlags,
+    flags: PubSubStatefulMessageFlags,
     body: SyncReadableBytesIO,
     minimal_headers: Iterable[str],
 ) -> Dict[str, bytes]:
@@ -190,7 +190,7 @@ def parse_simple_headers(
 
     Propagates errors from reading the body
     """
-    if (flags & PubSubWSMessageFlags.MINIMAL_HEADERS) != 0:
+    if (flags & PubSubStatefulMessageFlags.MINIMAL_HEADERS) != 0:
         result: Dict[str, bytes] = {}
         with GeneratorContextManager(parse_minimal_message_headers(body)) as parser:
             for name in minimal_headers:

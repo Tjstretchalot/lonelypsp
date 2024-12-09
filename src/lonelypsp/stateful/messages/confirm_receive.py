@@ -2,14 +2,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
 
 from lonelypsp.sync_io import SyncReadableBytesIO
-from lonelypsp.ws.constants import (
-    PubSubWSMessageFlags,
-    SubscriberToBroadcasterWSMessageType,
+from lonelypsp.stateful.constants import (
+    PubSubStatefulMessageFlags,
+    SubscriberToBroadcasterStatefulMessageType,
 )
 from lonelypsp.compat import fast_dataclass
-from lonelypsp.ws.generic_parser import S2B_MessageParser
-from lonelypsp.ws.parser_helpers import parse_simple_headers
-from lonelypsp.ws.serializer_helpers import (
+from lonelypsp.stateful.generic_parser import S2B_MessageParser
+from lonelypsp.stateful.parser_helpers import parse_simple_headers
+from lonelypsp.stateful.serializer_helpers import (
     MessageSerializer,
     serialize_simple_message,
 )
@@ -22,7 +22,7 @@ class S2B_ConfirmReceive:
     See the type enum documentation for more information on the fields
     """
 
-    type: Literal[SubscriberToBroadcasterWSMessageType.CONFIRM_RECEIVE]
+    type: Literal[SubscriberToBroadcasterStatefulMessageType.CONFIRM_RECEIVE]
     """discriminator value"""
 
     identifier: bytes
@@ -37,17 +37,17 @@ class S2B_ConfirmRecieveParser:
     """Satisfies S2B_MessageParser[S2B_ConfirmReceive]"""
 
     @classmethod
-    def relevant_types(cls) -> List[SubscriberToBroadcasterWSMessageType]:
-        return [SubscriberToBroadcasterWSMessageType.CONFIRM_RECEIVE]
+    def relevant_types(cls) -> List[SubscriberToBroadcasterStatefulMessageType]:
+        return [SubscriberToBroadcasterStatefulMessageType.CONFIRM_RECEIVE]
 
     @classmethod
     def parse(
         cls,
-        flags: PubSubWSMessageFlags,
-        type: SubscriberToBroadcasterWSMessageType,
+        flags: PubSubStatefulMessageFlags,
+        type: SubscriberToBroadcasterStatefulMessageType,
         payload: SyncReadableBytesIO,
     ) -> S2B_ConfirmReceive:
-        assert type == SubscriberToBroadcasterWSMessageType.CONFIRM_RECEIVE
+        assert type == SubscriberToBroadcasterStatefulMessageType.CONFIRM_RECEIVE
 
         headers = parse_simple_headers(flags, payload, _headers)
         identifier = headers["x-identifier"]
