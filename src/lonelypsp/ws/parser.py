@@ -1,37 +1,37 @@
 from typing import TYPE_CHECKING, List, Optional, Sequence, Type
 
-from httppubsubprotocol.sync_io import SyncReadableBytesIO
-from httppubsubprotocol.ws.constants import (
+from lonelypsp.sync_io import SyncReadableBytesIO
+from lonelypsp.ws.constants import (
     BroadcasterToSubscriberWSMessageType,
     PubSubWSMessageFlags,
     SubscriberToBroadcasterWSMessageType,
 )
-from httppubsubprotocol.ws.generic_parser import B2S_MessageParser, S2B_MessageParser
-from httppubsubprotocol.ws.message import S2B_Message, B2S_Message
-from httppubsubprotocol.ws.messages.configure import S2B_ConfigureParser
-from httppubsubprotocol.ws.messages.confirm_configure import B2S_ConfirmConfigureParser
-from httppubsubprotocol.ws.messages.confirm_notify import B2S_ConfirmNotifyParser
-from httppubsubprotocol.ws.messages.confirm_receive import S2B_ConfirmRecieveParser
-from httppubsubprotocol.ws.messages.confirm_subscribe import (
+from lonelypsp.ws.generic_parser import B2S_MessageParser, S2B_MessageParser
+from lonelypsp.ws.message import S2B_Message, B2S_Message
+from lonelypsp.ws.messages.configure import S2B_ConfigureParser
+from lonelypsp.ws.messages.confirm_configure import B2S_ConfirmConfigureParser
+from lonelypsp.ws.messages.confirm_notify import B2S_ConfirmNotifyParser
+from lonelypsp.ws.messages.confirm_receive import S2B_ConfirmRecieveParser
+from lonelypsp.ws.messages.confirm_subscribe import (
     B2S_ConfirmSubscribeExactParser,
     B2S_ConfirmSubscribeGlobParser,
 )
-from httppubsubprotocol.ws.messages.confirm_unsubscribe import (
+from lonelypsp.ws.messages.confirm_unsubscribe import (
     B2S_ConfirmUnsubscribeExactParser,
     B2S_ConfirmUnsubscribeGlobParser,
 )
-from httppubsubprotocol.ws.messages.continue_notify import B2S_ContinueNotifyParser
-from httppubsubprotocol.ws.messages.continue_receive import S2B_ContinueReceiveParser
-from httppubsubprotocol.ws.messages.enable_zstd_custom import B2S_EnableZstdCustomParser
-from httppubsubprotocol.ws.messages.enable_zstd_preset import B2S_EnableZstdPresetParser
-from httppubsubprotocol.ws.messages.notify import S2B_NotifyParser
-from httppubsubprotocol.ws.messages.notify_stream import S2B_NotifyStreamParser
-from httppubsubprotocol.ws.messages.receive_stream import B2S_ReceiveStreamParser
-from httppubsubprotocol.ws.messages.subscribe import (
+from lonelypsp.ws.messages.continue_notify import B2S_ContinueNotifyParser
+from lonelypsp.ws.messages.continue_receive import S2B_ContinueReceiveParser
+from lonelypsp.ws.messages.enable_zstd_custom import B2S_EnableZstdCustomParser
+from lonelypsp.ws.messages.enable_zstd_preset import B2S_EnableZstdPresetParser
+from lonelypsp.ws.messages.notify import S2B_NotifyParser
+from lonelypsp.ws.messages.notify_stream import S2B_NotifyStreamParser
+from lonelypsp.ws.messages.receive_stream import B2S_ReceiveStreamParser
+from lonelypsp.ws.messages.subscribe import (
     S2B_SubscribeExactParser,
     S2B_SubscribeGlobParser,
 )
-from httppubsubprotocol.ws.messages.unsubscribe import (
+from lonelypsp.ws.messages.unsubscribe import (
     S2B_UnsubscribeExactParser,
     S2B_UnsubscribeGlobParser,
 )

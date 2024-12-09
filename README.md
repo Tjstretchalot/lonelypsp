@@ -1,4 +1,6 @@
-# httppubsubprotocol
+# lonelypsp
+
+Lonely Pub-Sub Protocol (lonely being the opposite of connected!)
 
 ## PROJECT STAGE - PRE ALPHA
 
@@ -9,7 +11,7 @@ reaches the alpha stage.
 ## Overview
 
 This is the Python specification for the protocol used by the canonical implementation
-[httppubsubserver](https://github.com/Tjstretchalot/httppubsubserver). It serves both
+[lonelypss](https://github.com/Tjstretchalot/lonelypss). It serves both
 as a reference for the protocol and as a helper library for the Python server and client.
 
 The types here are intended to facilitate alternate server and client
@@ -35,8 +37,8 @@ Parsing:
 ```python
 import io
 
-from httppubsubprotocol.ws.parser import S2B_AnyMessageParser
-from httppubsubprotocol.ws.parser_helpers import parse_s2b_message_prefix
+from lonelypsp.ws.parser import S2B_AnyMessageParser
+from lonelypsp.ws.parser_helpers import parse_s2b_message_prefix
 
 
 message_body: io.BytesIO = ...
@@ -50,8 +52,8 @@ if message.type == SubscriberToBroadcasterWSMessageType.SUBSCRIBE_EXACT:
 Serialization:
 
 ```python
-from httppubsubprotocol.ws.constants import SubscriberToBroadcasterWSMessageType
-from httppubsubprotocol.ws.messages.subscribe import S2B_SubscribeExact, serialize_s2b_subscribe_exact
+from lonelypsp.ws.constants import SubscriberToBroadcasterWSMessageType
+from lonelypsp.ws.messages.subscribe import S2B_SubscribeExact, serialize_s2b_subscribe_exact
 
 message = serialize_s2b_subscribe_exact(
     S2B_SubscribeExact(

@@ -1,8 +1,8 @@
 from types import TracebackType
 from typing import Dict, Generator, Generic, Iterable, Iterator, List, Type, TypeVar
-from httppubsubprotocol.sync_io import SyncReadableBytesIO
-from httppubsubprotocol.compat import fast_dataclass
-from httppubsubprotocol.ws.constants import (
+from lonelypsp.sync_io import SyncReadableBytesIO
+from lonelypsp.compat import fast_dataclass
+from lonelypsp.ws.constants import (
     BroadcasterToSubscriberWSMessageType,
     PubSubWSMessageFlags,
     SubscriberToBroadcasterWSMessageType,

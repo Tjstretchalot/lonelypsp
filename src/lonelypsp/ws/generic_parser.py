@@ -1,12 +1,12 @@
 from typing import Generic, List, Protocol, TypeVar
 
-from httppubsubprotocol.ws.constants import (
+from lonelypsp.ws.constants import (
     BroadcasterToSubscriberWSMessageType,
     PubSubWSMessageFlags,
     SubscriberToBroadcasterWSMessageType,
 )
 
-from httppubsubprotocol.sync_io import SyncReadableBytesIO
+from lonelypsp.sync_io import SyncReadableBytesIO
 
 
 T_co = TypeVar("T_co", covariant=True)

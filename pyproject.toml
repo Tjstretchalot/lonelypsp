@@ -1,7 +1,7 @@
 [project]
-name = "httppubsubprotocol"
+name = "lonelypsp"
 version = "0.0.1"
-description = "PubSub over HTTP (protocol)"
+description = "Connectionless Pub-Sub Protocol"
 authors = [
     { name = "Timothy Moore", email = "mtimothy984@gmail.com" }
 ]

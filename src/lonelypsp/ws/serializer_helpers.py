@@ -1,6 +1,6 @@
 from typing import Collection, Generic, Protocol, TypeVar, Union
-from httppubsubprotocol.sync_io import PreallocatedBytesIO, SyncWritableBytesIO
-from httppubsubprotocol.ws.constants import (
+from lonelypsp.sync_io import PreallocatedBytesIO, SyncWritableBytesIO
+from lonelypsp.ws.constants import (
     BroadcasterToSubscriberWSMessageType,
     PubSubWSMessageFlags,
     SubscriberToBroadcasterWSMessageType,

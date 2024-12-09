@@ -10,19 +10,19 @@ from typing import (
     cast,
 )
 
-from httppubsubprotocol.sync_io import SyncReadableBytesIO
-from httppubsubprotocol.ws.constants import (
+from lonelypsp.sync_io import SyncReadableBytesIO
+from lonelypsp.ws.constants import (
     BroadcasterToSubscriberWSMessageType,
     PubSubWSMessageFlags,
 )
-from httppubsubprotocol.compat import fast_dataclass
-from httppubsubprotocol.ws.generic_parser import B2S_MessageParser
-from httppubsubprotocol.ws.parser_helpers import (
+from lonelypsp.compat import fast_dataclass
+from lonelypsp.ws.generic_parser import B2S_MessageParser
+from lonelypsp.ws.parser_helpers import (
     GeneratorContextManager,
     parse_expanded_headers,
     parse_minimal_message_headers,
 )
-from httppubsubprotocol.ws.serializer_helpers import (
+from lonelypsp.ws.serializer_helpers import (
     MessageSerializer,
     int_to_minimal_unsigned,
     serialize_simple_message,
