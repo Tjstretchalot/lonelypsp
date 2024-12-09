@@ -1,6 +1,6 @@
 [project]
 name = "lonelypsp"
-version = "0.0.1"
+version = "0.0.2"
 description = "Connectionless Pub-Sub Protocol"
 authors = [
     { name = "Timothy Moore", email = "mtimothy984@gmail.com" }
