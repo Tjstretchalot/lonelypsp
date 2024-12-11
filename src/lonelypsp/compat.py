@@ -16,4 +16,4 @@ else:
     def make_dataclass_fast(x: T) -> T:
         return partial(x, frozen=True)  # type: ignore
 
-    fast_dataclass = partial(fast_dataclass, frozen=True)
+    fast_dataclass = make_dataclass_fast(fast_dataclass)
