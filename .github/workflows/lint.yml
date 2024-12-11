@@ -28,3 +28,5 @@ jobs:
         working-directory: src
         run: |
           mypy lonelypsp --explicit-package-bases --disallow-untyped-defs
+      - name: Lint lonelypsp with ruff
+        run: ruff check --output-format=github src

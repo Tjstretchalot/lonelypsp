@@ -1,4 +1,3 @@
-import io
 from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
 
 from lonelypsp.sync_io import SyncReadableBytesIO

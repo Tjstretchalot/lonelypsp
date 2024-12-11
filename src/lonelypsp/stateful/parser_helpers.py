@@ -1,5 +1,5 @@
 from types import TracebackType
-from typing import Dict, Generator, Generic, Iterable, Iterator, List, Type, TypeVar
+from typing import Dict, Generator, Generic, Iterable, Iterator, Type, TypeVar
 from lonelypsp.sync_io import SyncReadableBytesIO
 from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (

@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Collection, List, Literal, Optional, Type, Union
 
 from lonelypsp.sync_io import SyncReadableBytesIO
