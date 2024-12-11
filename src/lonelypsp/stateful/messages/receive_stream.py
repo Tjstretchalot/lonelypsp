@@ -303,7 +303,7 @@ if TYPE_CHECKING:
 
 def serialize_b2s_receive_stream(
     msg: B2S_ReceiveStream, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[B2S_ReceiveStream]"""
     authorization_bytes = (
         msg.authorization.encode("utf-8") if msg.authorization is not None else b""

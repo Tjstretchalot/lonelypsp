@@ -64,7 +64,7 @@ if TYPE_CHECKING:
 
 def serialize_b2s_confirm_configure(
     msg: B2S_ConfirmConfigure, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[B2S_ConfirmConfigure]"""
     return serialize_simple_message(
         type=msg.type,

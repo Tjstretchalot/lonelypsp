@@ -197,7 +197,7 @@ if TYPE_CHECKING:
 
 def serialize_s2b_notify(
     msg: S2B_Notify, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[S2B_Notify]"""
     authorization_bytes = (
         b"" if msg.authorization is None else msg.authorization.encode("utf-8")

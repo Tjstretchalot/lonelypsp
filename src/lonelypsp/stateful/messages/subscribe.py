@@ -74,7 +74,7 @@ if TYPE_CHECKING:
 
 def serialize_s2b_subscribe_exact(
     msg: S2B_SubscribeExact, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[S2B_SubscribeExact]"""
     return serialize_simple_message(
         type=msg.type,
@@ -152,7 +152,7 @@ if TYPE_CHECKING:
 
 def serialize_s2b_subscribe_glob(
     msg: S2B_SubscribeGlob, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[S2B_SubscribeGlob]"""
     return serialize_simple_message(
         type=msg.type,

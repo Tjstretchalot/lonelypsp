@@ -90,7 +90,7 @@ def serialize_simple_message(
     header_values: Collection[bytes],
     payload: bytes,
     minimal_headers: bool,
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Serializes the entire contents of a websocket message with the given
     type, headers, and payload, returning the bytes contents to send along
     the websocket
@@ -140,7 +140,7 @@ class MessageSerializer(Generic[T_contra], Protocol):
 
     def __call__(
         self, msg: T_contra, /, *, minimal_headers: bool
-    ) -> Union[bytes, bytearray, memoryview]:
+    ) -> Union[bytes, bytearray]:
         """Serializes the given message into the bytes to send within a websocket
         bytes message.
 

@@ -66,7 +66,7 @@ if TYPE_CHECKING:
 
 def serialize_s2b_confirm_receive(
     msg: S2B_ConfirmReceive, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[S2B_ConfirmReceive]"""
     return serialize_simple_message(
         type=msg.type,

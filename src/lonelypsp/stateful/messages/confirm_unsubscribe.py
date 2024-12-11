@@ -65,7 +65,7 @@ if TYPE_CHECKING:
 
 def serialize_b2s_confirm_unsubscribe_exact(
     msg: B2S_ConfirmUnsubscribeExact, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[B2S_ConfirmUnsubscribeExact]"""
     return serialize_simple_message(
         type=msg.type,
@@ -133,7 +133,7 @@ if TYPE_CHECKING:
 
 def serialize_b2s_confirm_unsubscribe_glob(
     msg: B2S_ConfirmUnsubscribeGlob, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[B2S_ConfirmUnsubscribeGlob]"""
     return serialize_simple_message(
         type=msg.type,

@@ -113,7 +113,7 @@ if TYPE_CHECKING:
 
 def serialize_b2s_enable_zstd_preset(
     msg: B2S_EnableZstdPreset, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[B2S_EnableZstdPreset]"""
     return serialize_simple_message(
         type=msg.type,

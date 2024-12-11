@@ -95,7 +95,7 @@ if TYPE_CHECKING:
 
 def serialize_s2b_configure(
     msg: S2B_Configure, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[S2B_Configure]"""
     return serialize_simple_message(
         type=msg.type,

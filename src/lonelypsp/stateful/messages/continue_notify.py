@@ -76,7 +76,7 @@ if TYPE_CHECKING:
 
 def serialize_b2s_continue_notify(
     msg: B2S_ContinueNotify, /, *, minimal_headers: bool
-) -> Union[bytes, bytearray, memoryview]:
+) -> Union[bytes, bytearray]:
     """Satisfies MessageSerializer[B2S_ContinueNotify]"""
     return serialize_simple_message(
         type=msg.type,
