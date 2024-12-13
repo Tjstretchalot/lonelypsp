@@ -333,6 +333,7 @@ def serialize_b2s_receive_stream(
                 msg.topic,
                 b"\x00",
                 int_to_minimal_unsigned(msg.uncompressed_length),
+                int_to_minimal_unsigned(msg.uncompressed_length),
                 msg.unverified_uncompressed_sha512,
             ),
             payload=msg.payload,
