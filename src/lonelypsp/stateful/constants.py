@@ -387,8 +387,20 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
         compressor on smaller messages if it wants
     x-max-size: max 8 bytes, big-endian, unsigned. a hint to the subscriber for the largest
         payload for which the broadcaster will use this compressor. uses 2**64-1 to indicate
-        no upper bound. the client can use this compressor on larger messages if it wants
+        no upper bound. the client can use this compressor on larger messages if it wants.
 
     ### body
-    the dictionary to use for compression
+    the dictionary to use for compression.
+    """
+
+    DISABLE_ZSTD_CUSTOM = auto()
+    """Indicates that the broadcaster will no longer decompress messages using a specific 
+    dictionary and that it will no longer send messages compressed with a given dictionary.
+    
+    ### headers
+    x-identifier: the identifier assigned to the compressor formed with this dictionary.
+        unsigned, big-endian, max 8 bytes, min 65536
+    
+    ### body
+    none
     """

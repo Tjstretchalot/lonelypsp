@@ -14,6 +14,7 @@ from lonelypsp.stateful.messages.confirm_unsubscribe import (
 )
 from lonelypsp.stateful.messages.continue_notify import B2S_ContinueNotify
 from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceive
+from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustom
 from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustom
 from lonelypsp.stateful.messages.enable_zstd_preset import B2S_EnableZstdPreset
 from lonelypsp.stateful.messages.notify_stream import S2B_NotifyStream
@@ -50,6 +51,7 @@ B2S_Message = Union[
     B2S_ConfirmUnsubscribeExact,
     B2S_ConfirmUnsubscribeGlob,
     B2S_ContinueNotify,
+    B2S_DisableZstdCustom,
     B2S_EnableZstdCustom,
     B2S_EnableZstdPreset,
     B2S_ReceiveStream,

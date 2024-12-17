@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, List, Optional, Sequence, Type
 
+from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustomParser
 from lonelypsp.sync_io import SyncReadableBytesIO
 from lonelypsp.stateful.constants import (
     BroadcasterToSubscriberStatefulMessageType,
@@ -60,6 +61,7 @@ B2S_MESSAGE_PARSERS: List[Type[B2S_MessageParser[B2S_Message]]] = [
     B2S_ConfirmUnsubscribeExactParser,
     B2S_ConfirmUnsubscribeGlobParser,
     B2S_ContinueNotifyParser,
+    B2S_DisableZstdCustomParser,
     B2S_EnableZstdCustomParser,
     B2S_EnableZstdPresetParser,
     B2S_ReceiveStreamParser,
