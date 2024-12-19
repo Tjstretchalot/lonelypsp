@@ -61,7 +61,7 @@ class BoundedDeque(Generic[T]):
     def __init__(
         self, /, iterable: Optional[Iterable[T]] = None, *, maxlen: Optional[int] = None
     ) -> None:
-        self.data: List[Optional[T]] = list(iterable)
+        self.data: List[Optional[T]] = list(iterable) if iterable is not None else []
         """the data in the deque which will be resized exponentially until
         it reaches maxlen (if any)
         """
@@ -89,7 +89,9 @@ class BoundedDeque(Generic[T]):
     def __getitem__(self, idx: int) -> T:
         if idx < 0 or idx >= self.length:
             raise IndexError("index out of range")
-        return self.data[(self.start + idx) % len(self.data)]
+        result = self.data[(self.start + idx) % len(self.data)]
+        assert result is not None, "invariant violated"
+        return result
 
     def __setitem__(self, idx: int, val: T) -> None:
         if idx < 0 or idx >= self.length:
@@ -112,7 +114,7 @@ class BoundedDeque(Generic[T]):
         if self.max_size is not None and min_size > self.max_size:
             raise BoundedDequeFullError
 
-        new_data = [None] * min_size
+        new_data: List[Optional[T]] = [None] * min_size
         idx = self.start
         for new_idx in range(self.length):
             new_data[new_idx] = self.data[idx]
@@ -161,6 +163,7 @@ class BoundedDeque(Generic[T]):
             raise IndexError("pop from an empty deque")
         idx = (self.start + self.length - 1) % len(self.data)
         result = self.data[idx]
+        assert result is not None, "invariant violated"
         self.data[idx] = None
         self.length -= 1
         return result
@@ -183,6 +186,7 @@ class BoundedDeque(Generic[T]):
         if self.length == 0:
             raise IndexError("pop from an empty deque")
         result = self.data[self.start]
+        assert result is not None, "invariant violated"
         self.data[self.start] = None
         self.start += 1
         if self.start == len(self.data):
