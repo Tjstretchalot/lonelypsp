@@ -1,9 +1,20 @@
 import asyncio
 from types import TracebackType
-from typing import TYPE_CHECKING, List, Optional, Tuple, Type, TypeVar, Generic
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Literal,
+    Optional,
+    Type,
+    TypeVar,
+    Generic,
+    Union,
+)
 
 from lonelypsp.util.async_queue_like import AsyncQueueLike
 from lonelypsp.util.bounded_deque import BoundedDeque
+from enum import Enum, auto
+from lonelypsp.compat import fast_dataclass
 
 
 T = TypeVar("T")
@@ -11,6 +22,41 @@ T = TypeVar("T")
 
 class QueueDrained(Exception):
     """The exception raised when a drained queue is attempted to be accessed"""
+
+
+class _GetType(Enum):
+    GET = auto()
+    WAIT = auto()
+
+
+@fast_dataclass
+class _GetterGet(Generic[T]):
+    type: Literal[_GetType.GET]
+    future: asyncio.Future[T]
+
+
+@fast_dataclass
+class _GetterWait:
+    type: Literal[_GetType.WAIT]
+    future: asyncio.Future[None]
+
+
+class _PutType(Enum):
+    PUT = auto()
+    WAIT = auto()
+
+
+@fast_dataclass
+class _PutterPut(Generic[T]):
+    type: Literal[_PutType.PUT]
+    item: T
+    future: asyncio.Future[None]
+
+
+@fast_dataclass
+class _PutterWait:
+    type: Literal[_PutType.WAIT]
+    future: asyncio.Future[None]
 
 
 class DrainableAsyncioQueue(Generic[T]):
@@ -26,6 +72,10 @@ class DrainableAsyncioQueue(Generic[T]):
     - drain() method which empties the queue and raises a QueueDrained exception
       for any future get() or put() calls
 
+    - wait_not_empty() and wait_not_full() methods which are non-consuming version of get/put
+      which are safely cancelable at the cost of being inefficient if there are multiple
+      consumers/producers respectively.
+
     - can be used as an asynchronous context manager, which calls drain() when exiting
     """
 
@@ -38,10 +88,10 @@ class DrainableAsyncioQueue(Generic[T]):
         max_putters: Optional[int] = None,
     ) -> None:
         self._items: BoundedDeque[T] = BoundedDeque(maxlen=max_size)
-        self._getters: BoundedDeque[asyncio.Future[T]] = BoundedDeque(
+        self._getters: BoundedDeque[Union[_GetterGet[T], _GetterWait]] = BoundedDeque(
             maxlen=max_getters
         )
-        self._putters: BoundedDeque[Tuple[asyncio.Future[None], T]] = BoundedDeque(
+        self._putters: BoundedDeque[Union[_PutterPut[T], _PutterWait]] = BoundedDeque(
             maxlen=max_putters
         )
         # after draining _items will have maxlen 0, but we raise a different
@@ -70,8 +120,14 @@ class DrainableAsyncioQueue(Generic[T]):
             return False
 
         getter = self._getters.popleft()
+        while getter.type == _GetType.WAIT:
+            getter.future.set_result(None)
+            if not self._getters:
+                return False
+            getter = self._getters.popleft()
+
         item = self._items.popleft()
-        getter.set_result(item)
+        getter.future.set_result(item)
         return True
 
     def _on_get_one(self) -> bool:
@@ -85,8 +141,14 @@ class DrainableAsyncioQueue(Generic[T]):
             return False
 
         putter = self._putters.popleft()
-        putter[0].set_result(None)
-        self._items.append(putter[1])
+        while putter.type == _PutType.WAIT:
+            putter.future.set_result(None)
+            if not self._putters:
+                return False
+            putter = self._putters.popleft()
+
+        putter.future.set_result(None)
+        self._items.append(putter.item)
         return True
 
     def _on_put(self) -> None:
@@ -121,9 +183,11 @@ class DrainableAsyncioQueue(Generic[T]):
         if self._drained:
             raise QueueDrained
 
-        future: asyncio.Future[None] = asyncio.Future()
-        self._putters.append((future, item))
-        await future
+        putter: _PutterPut[T] = _PutterPut(
+            type=_PutType.PUT, item=item, future=asyncio.Future()
+        )
+        self._putters.append(putter)
+        await putter.future
 
     def put_nowait(self, item: T) -> None:
         if not self.full():
@@ -145,9 +209,9 @@ class DrainableAsyncioQueue(Generic[T]):
         if self._drained:
             raise QueueDrained
 
-        future: asyncio.Future[T] = asyncio.Future()
-        self._getters.append(future)
-        return await future
+        getter: _GetterGet[T] = _GetterGet(type=_GetType.GET, future=asyncio.Future())
+        self._getters.append(getter)
+        return await getter.future
 
     def get_nowait(self) -> T:
         if not self.empty():
@@ -159,6 +223,50 @@ class DrainableAsyncioQueue(Generic[T]):
             raise QueueDrained
 
         raise asyncio.QueueEmpty
+
+    async def wait_not_empty(self) -> None:
+        """Between this entering and the returned coroutine returning normally, at some
+        point the queue will have had an item available for get() call
+
+        This is generally helpful iff there is a single consumer; if there are multiple
+        consumers, between the caller being scheduled and being run the item may have already
+        been consumed, leading to wasted cycles. However, a big advantage of this is it can
+        be freely canceled without having to worry about if it completed or not
+
+        Raises QueueDrained if the queue has been drained before this call or before an item
+        is added
+        """
+        if not self.empty():
+            return
+
+        if self._drained:
+            raise QueueDrained
+
+        getter = _GetterWait(type=_GetType.WAIT, future=asyncio.Future())
+        self._getters.append(getter)
+        await getter.future
+
+    async def wait_not_full(self) -> None:
+        """Between this entering and the returned coroutine returning normally, at some
+        point the queue will have had space available for a put() call
+
+        This is generally helpful iff there is a single producer; if there are multiple
+        producers, between the caller being scheduled and being run the queue may have already
+        been filled, leading to wasted cycles. However, a big advantage of this is it can
+        be freely canceled without having to worry about if it completed or not
+
+        Raises QueueDrained if the queue has been drained before this call, will complete
+        normally if drained after being put into the queue
+        """
+        if not self.full():
+            return
+
+        if self._drained:
+            raise QueueDrained
+
+        putter = _PutterWait(type=_PutType.WAIT, future=asyncio.Future())
+        self._putters.append(putter)
+        await putter.future
 
     def drain(self) -> List[T]:
         """Drains out the queue.
@@ -184,7 +292,7 @@ class DrainableAsyncioQueue(Generic[T]):
 
         self._drained = True
         for getter in self._getters:
-            getter.set_exception(QueueDrained)
+            getter.future.set_exception(QueueDrained)
         assert not self._putters
 
         result = list(self._items)
