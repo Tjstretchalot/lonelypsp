@@ -184,5 +184,87 @@ class BoundedDeque(Generic[T]):
         self.length -= 1
         return result
 
+    def remove(self, val: T) -> None:
+        """Removes the first occurrence of val from the deque. Raises ValueError
+        if val is not in the deque. This is a pretty slow operation if the
+        value is in the middle
+        """
+        if not self:
+            raise ValueError("deque is empty")
+
+        array_idx = self.start
+        real_idx = 0
+        while True:
+            if self.data[array_idx] == val:
+                break
+            real_idx += 1
+            if real_idx == self.length:
+                raise ValueError("value not in deque")
+            array_idx += 1
+            if array_idx == len(self.data):
+                array_idx = 0
+
+        if real_idx == 0:
+            self.popleft()
+            return
+        if real_idx == self.length - 1:
+            self.pop()
+            return
+
+        # need to rearrange to avoid a hole by either shifting items
+        # left or right, we'll do whichever requires less movement
+        hole_real_idx = real_idx
+        hole_array_idx = array_idx
+        del array_idx
+        del real_idx
+
+        if hole_real_idx <= (self.length // 2):
+            # we have a hole at real_idx that we will fill by moving
+            # every item left of the hole right 1 idx
+            last = self.data[self.start]
+
+            moving_real_idx = 1
+            moving_array_idx = self.start + 1
+            if moving_array_idx == len(self.data):
+                moving_array_idx = 0
+
+            while moving_real_idx <= hole_real_idx:
+                tmp = self.data[moving_array_idx]
+                self.data[moving_array_idx] = last
+                last = tmp
+
+                moving_real_idx += 1
+                moving_array_idx += 1
+                if moving_array_idx == len(self.data):
+                    moving_array_idx = 0
+
+            self.data[self.start] = None
+            self.start += 1
+            self.length -= 1
+
+            if self.start == len(self.data):
+                self.start = 0
+            return
+
+        # we have a hole at real_idx that we will fill by moving
+        # every item right of the hole left 1 idx, replacing the right-most real index
+        # with None
+
+        moving_real_idx = hole_real_idx
+        moving_array_idx = hole_array_idx
+
+        while moving_real_idx < self.length - 1:
+            next_moving_array_idx = moving_array_idx + 1
+            if next_moving_array_idx == len(self.data):
+                next_moving_array_idx = 0
+
+            self.data[moving_array_idx] = self.data[next_moving_array_idx]
+
+            moving_real_idx += 1
+            moving_array_idx = next_moving_array_idx
+
+        self.data[moving_array_idx] = None
+        self.length -= 1
+
     def __iter__(self) -> BoundedDequeInPlaceIter[T]:
         return BoundedDequeInPlaceIter(self)

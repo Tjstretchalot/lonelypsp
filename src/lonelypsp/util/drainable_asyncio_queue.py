@@ -116,19 +116,18 @@ class DrainableAsyncioQueue(Generic[T]):
         Note that if there is a getter then we may now have space for another
         putter
         """
-        if not self._getters:
-            return False
-
-        getter = self._getters.popleft()
-        while getter.type == _GetType.WAIT:
-            getter.future.set_result(None)
+        while True:
             if not self._getters:
                 return False
-            getter = self._getters.popleft()
 
-        item = self._items.popleft()
-        getter.future.set_result(item)
-        return True
+            getter = self._getters.popleft()
+            if getter.type == _GetType.WAIT:
+                getter.future.set_result(None)
+                continue
+
+            item = self._items.popleft()
+            getter.future.set_result(item)
+            return True
 
     def _on_get_one(self) -> bool:
         """Internal function to implement _on_put and _on_get; alerts the next
@@ -137,19 +136,18 @@ class DrainableAsyncioQueue(Generic[T]):
         Note that if there is a putter then we may now have space for another
         getter
         """
-        if not self._putters:
-            return False
-
-        putter = self._putters.popleft()
-        while putter.type == _PutType.WAIT:
-            putter.future.set_result(None)
+        while True:
             if not self._putters:
                 return False
-            putter = self._putters.popleft()
 
-        putter.future.set_result(None)
-        self._items.append(putter.item)
-        return True
+            putter = self._putters.popleft()
+            if putter.type == _PutType.WAIT:
+                putter.future.set_result(None)
+                continue
+
+            putter.future.set_result(None)
+            self._items.append(putter.item)
+            return True
 
     def _on_put(self) -> None:
         """Internal function called when a new item was put into the queue"""
@@ -187,7 +185,13 @@ class DrainableAsyncioQueue(Generic[T]):
             type=_PutType.PUT, item=item, future=asyncio.Future()
         )
         self._putters.append(putter)
-        await putter.future
+        try:
+            await asyncio.wait([putter.future])
+        except asyncio.CancelledError:
+            if putter.future.cancel():
+                self._putters.remove(putter)
+                raise
+            putter.future.result()
 
     def put_nowait(self, item: T) -> None:
         if not self.full():
@@ -211,7 +215,15 @@ class DrainableAsyncioQueue(Generic[T]):
 
         getter: _GetterGet[T] = _GetterGet(type=_GetType.GET, future=asyncio.Future())
         self._getters.append(getter)
-        return await getter.future
+        try:
+            await asyncio.wait([getter.future])
+        except asyncio.CancelledError:
+            if getter.future.cancel():
+                self._getters.remove(getter)
+                raise
+            return await getter.future
+
+        return getter.future.result()
 
     def get_nowait(self) -> T:
         if not self.empty():
@@ -244,7 +256,13 @@ class DrainableAsyncioQueue(Generic[T]):
 
         getter = _GetterWait(type=_GetType.WAIT, future=asyncio.Future())
         self._getters.append(getter)
-        await getter.future
+        try:
+            await asyncio.wait([getter.future])
+        except asyncio.CancelledError:
+            if getter.future.cancel():
+                self._getters.remove(getter)
+                raise
+            await getter.future
 
     async def wait_not_full(self) -> None:
         """Between this entering and the returned coroutine returning normally, at some
@@ -266,7 +284,13 @@ class DrainableAsyncioQueue(Generic[T]):
 
         putter = _PutterWait(type=_PutType.WAIT, future=asyncio.Future())
         self._putters.append(putter)
-        await putter.future
+        try:
+            await asyncio.wait([putter.future])
+        except asyncio.CancelledError:
+            if putter.future.cancel():
+                self._putters.remove(putter)
+                raise
+            await putter.future
 
     def drain(self) -> List[T]:
         """Drains out the queue.
@@ -295,7 +319,6 @@ class DrainableAsyncioQueue(Generic[T]):
             getter.future.set_exception(QueueDrained)
         assert not self._putters
 
-        result = list(self._items)
         self._items = BoundedDeque(maxlen=0)
         self._getters = BoundedDeque(maxlen=0)
         self._putters = BoundedDeque(maxlen=0)
