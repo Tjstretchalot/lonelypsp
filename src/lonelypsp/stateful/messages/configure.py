@@ -44,7 +44,12 @@ class S2B_Configure:
     """
 
 
-_headers: Collection[str] = ("x-subscriber-nonce", "x-enable-zstd", "x-enable-training")
+_headers: Collection[str] = (
+    "x-subscriber-nonce",
+    "x-enable-zstd",
+    "x-enable-training",
+    "x-initial-dict",
+)
 
 
 class S2B_ConfigureParser:
