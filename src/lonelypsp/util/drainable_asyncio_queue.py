@@ -2,6 +2,7 @@ import asyncio
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
+    Iterable,
     List,
     Literal,
     Optional,
@@ -81,6 +82,7 @@ class DrainableAsyncioQueue(Generic[T]):
 
     def __init__(
         self,
+        items: Optional[Iterable[T]] = None,
         /,
         *,
         max_size: Optional[int] = None,
@@ -98,6 +100,10 @@ class DrainableAsyncioQueue(Generic[T]):
         # error
         self._drained = False
 
+        if items is not None:
+            for item in items:
+                self._items.append(item)
+
     async def __aenter__(self) -> "DrainableAsyncioQueue[T]":
         return self
 
@@ -108,6 +114,12 @@ class DrainableAsyncioQueue(Generic[T]):
         traceback: Optional[TracebackType],
     ) -> None:
         self.drain()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({list(self._items)!r})"
+
+    def __str__(self) -> str:
+        return f"{{{self.__class__.__name__}; items=({self._items}) drained={self._drained} getters={len(self._getters)} putters={len(self._putters)}}}"
 
     def _on_put_one(self) -> bool:
         """Internal function to implement _on_put and _on_get; alerts the next
