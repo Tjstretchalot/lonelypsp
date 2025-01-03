@@ -85,9 +85,8 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
 
     CHECK_SUBSCRIPTIONS = auto()
     """The subscriber wants to get the strong etag representing the subscriptions for
-    a specific url. Generally, the subscriber has retrieved this value via the result
-    of SET_SUBSCRIPTIONS and is checking to see if it has changed, but it MAY also
-    generate the value itself and check it against the broadcaster's value.
+    a specific url. Generally, the subscriber is comparing it against what it
+    expects by computing it itself.
 
     The strong etag is the SHA512 hash of a document which is of the following
     form, where all indicated lengths are 2 bytes, big-endian encoded:
@@ -117,7 +116,7 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     SET_SUBSCRIPTIONS = auto()
     """The subscriber wants to set all of their subscriptions and retrieve the strong etag
     it corresponds to. Unlike with `SUBSCRIBE`/`UNSUBSCRIBE`, this message is idempotent, which
-    makes recovery easier
+    makes recovery easier. 
 
     See the documentation for `CHECK_SUBSCRIPTIONS` for the format of the etag
 
@@ -127,6 +126,8 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     ### request body
     - 2 bytes (N): length of the subscriber url to set, big-endian, unsigned
     - N bytes: the url to set, utf-8 encoded
+    - 1 byte (reserved for etag format): 0
+    - 64 bytes: the strong etag, will be rechecked
     - 4 bytes (E): the number of exact topics to set, big-endian, unsigned
     - REPEAT E TIMES:
       - 2 bytes (L): length of the topic, big-endian, unsigned
@@ -137,8 +138,7 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
       - L bytes: the glob pattern, utf-8 encoded
 
     ### response body
-    - 1 byte (reserved for etag format): 0
-    - 64 bytes: the etag
+    empty
     """
 
 
