@@ -1,17 +1,17 @@
 from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
 
-from lonelypsp.sync_io import SyncReadableBytesIO
+from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (
     BroadcasterToSubscriberStatefulMessageType,
     PubSubStatefulMessageFlags,
 )
-from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.generic_parser import B2S_MessageParser
 from lonelypsp.stateful.parser_helpers import parse_simple_headers
 from lonelypsp.stateful.serializer_helpers import (
     MessageSerializer,
     serialize_simple_message,
 )
+from lonelypsp.sync_io import SyncReadableBytesIO
 
 
 @fast_dataclass

@@ -1,5 +1,5 @@
-from dataclasses import dataclass as fast_dataclass
 import sys
+from dataclasses import dataclass as fast_dataclass
 from functools import partial
 from typing import TypeVar
 

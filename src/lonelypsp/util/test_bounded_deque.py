@@ -1,3 +1,4 @@
+# ruff: noqa: T201
 """fuzzes the bounded queue behaving like a list"""
 
 import random

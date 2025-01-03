@@ -1,22 +1,21 @@
 import asyncio
+from enum import Enum, auto
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
+    Generic,
     Iterable,
     List,
     Literal,
     Optional,
     Type,
     TypeVar,
-    Generic,
     Union,
 )
 
+from lonelypsp.compat import fast_dataclass
 from lonelypsp.util.async_queue_like import AsyncQueueLike
 from lonelypsp.util.bounded_deque import BoundedDeque
-from enum import Enum, auto
-from lonelypsp.compat import fast_dataclass
-
 
 T = TypeVar("T")
 

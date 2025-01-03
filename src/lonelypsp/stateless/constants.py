@@ -83,6 +83,64 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - M bytes: the glob pattern, utf-8 encoded
     """
 
+    CHECK_SUBSCRIPTIONS = auto()
+    """The subscriber wants to get the strong etag representing the subscriptions for
+    a specific url. Generally, the subscriber has retrieved this value via the result
+    of SET_SUBSCRIPTIONS and is checking to see if it has changed, but it MAY also
+    generate the value itself and check it against the broadcaster's value.
+
+    The strong etag is the SHA512 hash of a document which is of the following
+    form, where all indicated lengths are 2 bytes, big-endian encoded:
+    
+    ```
+    URL<url_length><url>
+    EXACT<topic_length><topic><topic_length><topic>
+    GLOB<glob_length><glob><glob_length><glob>
+    ```
+
+    where URL, EXACT and GLOB are the ascii-representations and there are 3
+    guarranteed newlines as shown (including a trailing newline). Note that URL,
+    EXACT, GLOB, and newlines may show up within topics/globs
+
+    ### headers
+    - authorization: proof the subscriber is authorized to check the subscriptions for the url
+
+    ### request body
+    - 2 bytes (N): length of the subscriber url to check, big-endian, unsigned
+    - N bytes: the url to check, utf-8 encoded
+
+    ### response body
+    - 1 byte (reserved for etag format): 0
+    - 64 bytes: the etag
+    """
+
+    SET_SUBSCRIPTIONS = auto()
+    """The subscriber wants to set all of their subscriptions and retrieve the strong etag
+    it corresponds to. Unlike with `SUBSCRIBE`/`UNSUBSCRIBE`, this message is idempotent, which
+    makes recovery easier
+
+    See the documentation for `CHECK_SUBSCRIPTIONS` for the format of the etag
+
+    ### headers
+    - authorization: proof the subscriber is authorized to set the subscriptions for the url
+
+    ### request body
+    - 2 bytes (N): length of the subscriber url to set, big-endian, unsigned
+    - N bytes: the url to set, utf-8 encoded
+    - 4 bytes (E): the number of exact topics to set, big-endian, unsigned
+    - REPEAT E TIMES:
+      - 2 bytes (L): length of the topic, big-endian, unsigned
+      - L bytes: the topic, utf-8 encoded
+    - 4 bytes (G): the number of glob patterns to set, big-endian, unsigned
+    - REPEAT G TIMES:
+      - 2 bytes (L): length of the glob pattern, big-endian, unsigned
+      - L bytes: the glob pattern, utf-8 encoded
+
+    ### response body
+    - 1 byte (reserved for etag format): 0
+    - 64 bytes: the etag
+    """
+
 
 class SubscriberToBroadcasterStatelessResponseType(IntEnum):
     """When the broadcaster reaches out to a subscriber they have the opportunity

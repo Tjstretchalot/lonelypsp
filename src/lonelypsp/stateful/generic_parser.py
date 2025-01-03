@@ -5,9 +5,7 @@ from lonelypsp.stateful.constants import (
     PubSubStatefulMessageFlags,
     SubscriberToBroadcasterStatefulMessageType,
 )
-
 from lonelypsp.sync_io import SyncReadableBytesIO
-
 
 T_co = TypeVar("T_co", covariant=True)
 

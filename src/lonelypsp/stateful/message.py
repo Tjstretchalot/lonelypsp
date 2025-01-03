@@ -17,8 +17,8 @@ from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceive
 from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustom
 from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustom
 from lonelypsp.stateful.messages.enable_zstd_preset import B2S_EnableZstdPreset
-from lonelypsp.stateful.messages.notify_stream import S2B_NotifyStream
 from lonelypsp.stateful.messages.notify import S2B_Notify
+from lonelypsp.stateful.messages.notify_stream import S2B_NotifyStream
 from lonelypsp.stateful.messages.receive_stream import B2S_ReceiveStream
 from lonelypsp.stateful.messages.subscribe import (
     S2B_SubscribeExact,
@@ -28,7 +28,6 @@ from lonelypsp.stateful.messages.unsubscribe import (
     S2B_UnsubscribeExact,
     S2B_UnsubscribeGlob,
 )
-
 
 S2B_Message = Union[
     S2B_Configure,

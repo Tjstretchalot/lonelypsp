@@ -10,12 +10,11 @@ from typing import (
     cast,
 )
 
-from lonelypsp.sync_io import SyncReadableBytesIO
+from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (
     BroadcasterToSubscriberStatefulMessageType,
     PubSubStatefulMessageFlags,
 )
-from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.generic_parser import B2S_MessageParser
 from lonelypsp.stateful.parser_helpers import (
     GeneratorContextManager,
@@ -27,6 +26,7 @@ from lonelypsp.stateful.serializer_helpers import (
     int_to_minimal_unsigned,
     serialize_simple_message,
 )
+from lonelypsp.sync_io import SyncReadableBytesIO
 
 
 @fast_dataclass

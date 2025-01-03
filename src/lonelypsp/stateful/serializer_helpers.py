@@ -1,10 +1,11 @@
 from typing import Collection, Generic, Protocol, TypeVar, Union
-from lonelypsp.sync_io import PreallocatedBytesIO, SyncWritableBytesIO
+
 from lonelypsp.stateful.constants import (
     BroadcasterToSubscriberStatefulMessageType,
     PubSubStatefulMessageFlags,
     SubscriberToBroadcasterStatefulMessageType,
 )
+from lonelypsp.sync_io import PreallocatedBytesIO, SyncWritableBytesIO
 
 
 def serialize_prefix(

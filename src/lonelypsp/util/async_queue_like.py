@@ -3,7 +3,6 @@
 import asyncio
 from typing import TYPE_CHECKING, Generic, Protocol, Type, TypeVar
 
-
 T = TypeVar("T")
 
 

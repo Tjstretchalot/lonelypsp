@@ -1,3 +1,4 @@
+# ruff: noqa: T201
 """Verifies that with cancel_and_check it is possible to use get() and put(),
 though it is rather perplexing
 """

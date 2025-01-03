@@ -1,14 +1,12 @@
 from typing import TYPE_CHECKING, List, Optional, Sequence, Type
 
-from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustomParser
-from lonelypsp.sync_io import SyncReadableBytesIO
 from lonelypsp.stateful.constants import (
     BroadcasterToSubscriberStatefulMessageType,
     PubSubStatefulMessageFlags,
     SubscriberToBroadcasterStatefulMessageType,
 )
 from lonelypsp.stateful.generic_parser import B2S_MessageParser, S2B_MessageParser
-from lonelypsp.stateful.message import S2B_Message, B2S_Message
+from lonelypsp.stateful.message import B2S_Message, S2B_Message
 from lonelypsp.stateful.messages.configure import S2B_ConfigureParser
 from lonelypsp.stateful.messages.confirm_configure import B2S_ConfirmConfigureParser
 from lonelypsp.stateful.messages.confirm_notify import B2S_ConfirmNotifyParser
@@ -23,6 +21,7 @@ from lonelypsp.stateful.messages.confirm_unsubscribe import (
 )
 from lonelypsp.stateful.messages.continue_notify import B2S_ContinueNotifyParser
 from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceiveParser
+from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustomParser
 from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustomParser
 from lonelypsp.stateful.messages.enable_zstd_preset import B2S_EnableZstdPresetParser
 from lonelypsp.stateful.messages.notify import S2B_NotifyParser
@@ -36,7 +35,7 @@ from lonelypsp.stateful.messages.unsubscribe import (
     S2B_UnsubscribeExactParser,
     S2B_UnsubscribeGlobParser,
 )
-
+from lonelypsp.sync_io import SyncReadableBytesIO
 
 S2B_MESSAGE_PARSERS: List[Type[S2B_MessageParser[S2B_Message]]] = [
     S2B_ConfigureParser,

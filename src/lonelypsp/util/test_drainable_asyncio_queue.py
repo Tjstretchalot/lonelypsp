@@ -1,3 +1,4 @@
+# ruff: noqa: T201
 """Tests that cancellation works as well as is possible and shows the
 somewhat unintuitive but expected behavior, which also highlights why
 wait_not_empty() combined with get_no_wait() is much easier to use 
@@ -7,6 +8,7 @@ through depends on if there are event loop iterations after cancellation
 """
 
 import asyncio
+
 from lonelypsp.util.drainable_asyncio_queue import DrainableAsyncioQueue
 
 
