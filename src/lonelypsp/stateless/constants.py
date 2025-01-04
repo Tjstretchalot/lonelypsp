@@ -131,7 +131,7 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - 4 bytes (E): the number of exact topics to set, big-endian, unsigned
     - REPEAT E TIMES:
       - 2 bytes (L): length of the topic, big-endian, unsigned
-      - L bytes: the topic, utf-8 encoded
+      - L bytes: the topic
     - 4 bytes (G): the number of glob patterns to set, big-endian, unsigned
     - REPEAT G TIMES:
       - 2 bytes (L): length of the glob pattern, big-endian, unsigned
