@@ -1,6 +1,6 @@
 import hashlib
 import io
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from lonelypsp.compat import fast_dataclass
 
@@ -14,12 +14,33 @@ class StrongEtag:
     """the SHA512 hash of the document"""
 
 
-def make_strong_etag(url: str, topics: List[bytes], globs: List[str]) -> StrongEtag:
+def make_strong_etag(
+    url: str, topics: List[bytes], globs: List[str], *, recheck_sort: bool = True
+) -> StrongEtag:
     """Generates the strong etag for `CHECK_SUBSCRIPTIONS` and
     `SET_SUBSCRIPTIONS` in a single pass; this is useful for reference
     or when there are a small number of topics/globs, but the etag
     can be generated from streaming data using `create_strong_etag_generator`
+
+    NOTE: the topics and globs MUST be in (bytewise) lexicographic order
+    for this to be stable. If `recheck_sort` is `True`, this will raise
+    `ValueError` if the topics or globs are not sorted properly. If
+    explicitly set to `False`, then the caller must have already ensured
+    the topics and globs are sorted properly
     """
+
+    if recheck_sort:
+        for idx, topic in enumerate(topics):
+            if idx > 0 and topic <= topics[idx - 1]:
+                raise ValueError(
+                    "topics must be unique and in ascending lexicographic order"
+                )
+
+        for idx, glob in enumerate(globs):
+            if idx > 0 and glob <= globs[idx - 1]:
+                raise ValueError(
+                    "globs must be unique and in ascending lexicographic order"
+                )
 
     doc = io.BytesIO()
     doc.write(b"URL")
@@ -47,8 +68,10 @@ def make_strong_etag(url: str, topics: List[bytes], globs: List[str]) -> StrongE
 class StrongEtagGeneratorAtGlobs:
     """Adds glob patterns to the strong etag, then call finish() to get the strong etag"""
 
-    def __init__(self, hasher: "hashlib._Hash") -> None:
+    def __init__(self, hasher: "hashlib._Hash", *, recheck_sort: bool = True) -> None:
         self.hasher = hasher
+        self._recheck_sort = recheck_sort
+        self._last_glob: Optional[bytes] = None
 
     def add_glob(self, *globs: str) -> "StrongEtagGeneratorAtGlobs":
         """Add the given glob or globs to the strong etag; multiple globs can be
@@ -59,6 +82,15 @@ class StrongEtagGeneratorAtGlobs:
             return self
 
         encoded_globs = [g.encode("utf-8") for g in globs]
+
+        if self._recheck_sort:
+            for g in encoded_globs:
+                if self._last_glob is not None and g <= self._last_glob:
+                    raise ValueError(
+                        "globs must be unique and in ascending lexicographic order"
+                    )
+                self._last_glob = g
+
         buf = bytearray(2 * len(globs) + sum(len(g) for g in encoded_globs))
         pos = 0
         for encoded_glob in encoded_globs:
@@ -78,8 +110,10 @@ class StrongEtagGeneratorAtGlobs:
 class StrongEtagGeneratorAtTopics:
     """Adds topics to the strong etag, then call finish_topics() to move onto globs"""
 
-    def __init__(self, hasher: "hashlib._Hash") -> None:
+    def __init__(self, hasher: "hashlib._Hash", *, recheck_sort: bool = True) -> None:
         self.hasher = hasher
+        self._recheck_sort = recheck_sort
+        self._last_topic: Optional[bytes] = None
 
     def add_topic(self, *topic: bytes) -> "StrongEtagGeneratorAtTopics":
         """Add the given topic or topics to the strong etag; multiple topics can be
@@ -88,6 +122,14 @@ class StrongEtagGeneratorAtTopics:
         """
         if len(topic) == 0:
             return self
+
+        if self._recheck_sort:
+            for t in topic:
+                if self._last_topic is not None and t <= self._last_topic:
+                    raise ValueError(
+                        "topics must be unique and in ascending lexicographic order"
+                    )
+                self._last_topic = t
 
         buf = bytearray(2 * len(topic) + sum(len(t) for t in topic))
         pos = 0
@@ -102,10 +144,12 @@ class StrongEtagGeneratorAtTopics:
 
     def finish_topics(self) -> StrongEtagGeneratorAtGlobs:
         self.hasher.update(b"\nGLOB")
-        return StrongEtagGeneratorAtGlobs(self.hasher)
+        return StrongEtagGeneratorAtGlobs(self.hasher, recheck_sort=self._recheck_sort)
 
 
-def create_strong_etag_generator(url: str) -> StrongEtagGeneratorAtTopics:
+def create_strong_etag_generator(
+    url: str, *, recheck_sort: bool = True
+) -> StrongEtagGeneratorAtTopics:
     """Returns a StrongEtagGeneratorAtTopics that can be used to add topics and
     globs to the strong etag, then call finish_topics() to get the generator for
     adding globs, then call finish() to get the strong etag. This avoids having
@@ -116,13 +160,19 @@ def create_strong_etag_generator(url: str) -> StrongEtagGeneratorAtTopics:
 
     ```python
     etag = (
-        create_strong_etag_generator("https://example.com")
+        create_strong_etag_generator("https://example.com", recheck_sort=False)
         .add_topic(b"topic1", b"topic2")
         .finish_topics()
         .add_glob("glob1", "glob2")
         .finish()
     )
     ```
+
+    NOTE: the topics and globs MUST be in (bytewise) lexicographic order
+    for this to be stable. If `recheck_sort` is `True`, this will raise
+    `ValueError` if the topics or globs are not sorted properly. If
+    explicitly set to `False`, then the caller must have already ensured
+    the topics and globs are sorted properly
     """
     encoded_url = url.encode("utf-8")
     buf = bytearray(3 + 2 + len(encoded_url) + 6)
@@ -132,4 +182,4 @@ def create_strong_etag_generator(url: str) -> StrongEtagGeneratorAtTopics:
     buf[-6:] = b"\nEXACT"
 
     hasher = hashlib.sha512(buf)
-    return StrongEtagGeneratorAtTopics(hasher)
+    return StrongEtagGeneratorAtTopics(hasher, recheck_sort=recheck_sort)

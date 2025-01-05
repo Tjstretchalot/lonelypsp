@@ -99,7 +99,8 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
 
     where URL, EXACT and GLOB are the ascii-representations and there are 3
     guarranteed newlines as shown (including a trailing newline). Note that URL,
-    EXACT, GLOB, and newlines may show up within topics/globs
+    EXACT, GLOB, and newlines may show up within topics/globs. The topics and globs
+    must be sorted in (bytewise) lexicographical order
 
     ### headers
     - authorization: proof the subscriber is authorized to check the subscriptions for the url
@@ -118,6 +119,20 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     it corresponds to. Unlike with `SUBSCRIBE`/`UNSUBSCRIBE`, this message is idempotent, which
     makes recovery easier. 
 
+    The broadcaster MUST guarrantee the following properties, which mostly
+    apply to concurrent requests:
+
+    - If the subscriber is previously subscribed to a topic/glob and that
+      topic/glob is in this list, the subscriber is at no point unsubscribed
+      from that topic/glob due to this call
+    - If the subscriber is not previously subscribed to a topic/glob and that
+      is not in this list, the subscriber is at no point subscribed to that
+      topic/glob due to this call
+    - At some point during this call, the subscriber is subscribed to each
+      (but not necessarily all) of the topics/globs in this list
+    - At some point during this call, the subscriber is unsubscribed from
+      each (but not necessarily all) of the topics/globs not in this list
+
     See the documentation for `CHECK_SUBSCRIPTIONS` for the format of the etag
 
     ### headers
@@ -129,11 +144,11 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - 1 byte (reserved for etag format): 0
     - 64 bytes: the strong etag, will be rechecked
     - 4 bytes (E): the number of exact topics to set, big-endian, unsigned
-    - REPEAT E TIMES:
+    - REPEAT E TIMES: (in ascending lexicographic order of the topics)
       - 2 bytes (L): length of the topic, big-endian, unsigned
       - L bytes: the topic
     - 4 bytes (G): the number of glob patterns to set, big-endian, unsigned
-    - REPEAT G TIMES:
+    - REPEAT G TIMES: (in ascending lexicographic order of the globs)
       - 2 bytes (L): length of the glob pattern, big-endian, unsigned
       - L bytes: the glob pattern, utf-8 encoded
 
