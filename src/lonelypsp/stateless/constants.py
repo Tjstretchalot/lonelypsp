@@ -107,9 +107,9 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     GLOB<glob_length><glob><recovery_length><recovery><...>
     ```
 
-    where URL, RECOVERY, EXACT and GLOB are the ascii-representations and there
-    are 4 guarranteed newlines as shown (including a trailing newline). Note
-    that URL, RECOVERY, EXACT, GLOB, and newlines may show up within
+    where URL, EXACT and GLOB are the ascii-representations and there
+    are 3 guarranteed newlines as shown (including a trailing newline). Note
+    that URL, EXACT, GLOB, and newlines may show up within
     topics/globs. The topics and globs must be sorted in (bytewise)
     lexicographical order
 
