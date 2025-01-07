@@ -15,7 +15,12 @@ class StrongEtag:
 
 
 def make_strong_etag(
-    url: str, topics: List[bytes], globs: List[str], *, recheck_sort: bool = True
+    url: str,
+    topics: List[bytes],
+    globs: List[str],
+    *,
+    recovery: Optional[str],
+    recheck_sort: bool = True
 ) -> StrongEtag:
     """Generates the strong etag for `CHECK_SUBSCRIPTIONS` and
     `SET_SUBSCRIPTIONS` in a single pass; this is useful for reference
@@ -48,6 +53,14 @@ def make_strong_etag(
     encoded_url = url.encode("utf-8")
     doc.write(len(encoded_url).to_bytes(2, "big"))
     doc.write(encoded_url)
+
+    doc.write(b"\nRECOVERY")
+    if recovery is None:
+        doc.write(b"\0")
+    else:
+        encoded_recovery_url = recovery.encode("utf-8")
+        doc.write(len(encoded_recovery_url).to_bytes(2, "big"))
+        doc.write(encoded_recovery_url)
 
     doc.write(b"\nEXACT")
     for topic in topics:
@@ -147,8 +160,19 @@ class StrongEtagGeneratorAtTopics:
         return StrongEtagGeneratorAtGlobs(self.hasher, recheck_sort=self._recheck_sort)
 
 
+class _PreallocatedBytesIO:
+    def __init__(self, size: int) -> None:
+        self.buf = bytearray(size)
+        self.pos = 0
+
+    def write(self, data: bytes) -> None:
+        assert self.pos + len(data) <= len(self.buf)
+        self.buf[self.pos : self.pos + len(data)] = data
+        self.pos += len(data)
+
+
 def create_strong_etag_generator(
-    url: str, *, recheck_sort: bool = True
+    url: str, *, recovery: Optional[str], recheck_sort: bool = True
 ) -> StrongEtagGeneratorAtTopics:
     """Returns a StrongEtagGeneratorAtTopics that can be used to add topics and
     globs to the strong etag, then call finish_topics() to get the generator for
@@ -160,7 +184,7 @@ def create_strong_etag_generator(
 
     ```python
     etag = (
-        create_strong_etag_generator("https://example.com", recheck_sort=False)
+        create_strong_etag_generator("https://example.com", recovery=None, recheck_sort=False)
         .add_topic(b"topic1", b"topic2")
         .finish_topics()
         .add_glob("glob1", "glob2")
@@ -175,11 +199,18 @@ def create_strong_etag_generator(
     the topics and globs are sorted properly
     """
     encoded_url = url.encode("utf-8")
-    buf = bytearray(3 + 2 + len(encoded_url) + 6)
-    buf[0:3] = b"URL"
-    buf[3:5] = len(encoded_url).to_bytes(2, "big")
-    buf[5:-6] = encoded_url
-    buf[-6:] = b"\nEXACT"
+    encoded_recovery = b"" if recovery is None else recovery.encode("utf-8")
+    buf = _PreallocatedBytesIO(
+        3 + 2 + len(encoded_url) + 9 + 2 + len(encoded_recovery) + 6
+    )
 
-    hasher = hashlib.sha512(buf)
+    buf.write(b"URL")
+    buf.write(len(encoded_url).to_bytes(2, "big"))
+    buf.write(encoded_url)
+    buf.write(b"\nRECOVERY")
+    buf.write(len(encoded_recovery).to_bytes(2, "big"))
+    buf.write(encoded_recovery)
+    buf.write(b"\nEXACT")
+
+    hasher = hashlib.sha512(buf.buf)
     return StrongEtagGeneratorAtTopics(hasher, recheck_sort=recheck_sort)

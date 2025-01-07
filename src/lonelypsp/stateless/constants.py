@@ -28,7 +28,9 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     """
 
     SUBSCRIBE_EXACT = auto()
-    """The subscriber wants to receive messages posted to a specific topic
+    """The subscriber wants to receive messages posted to a specific topic. If
+    the subscriber is already subscribed to the topic, the recovery url is ignored
+    and no changes are made
 
     ### headers
     - authorization: proof the subscriber is authorized to subscribe to the topic
@@ -38,11 +40,16 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - N bytes: the url that the subscriber can be reached at, utf-8 encoded
     - 2 bytes (M): the length of the topic, big-endian, unsigned
     - M bytes: the topic, utf-8 encoded
+    - 2 bytes (R): either 0, to indicate no missed messages are desired, or the length
+      of the url to post missed messages to, big-endian, unsigned
+    - R bytes: the url to post missed messages to, utf-8 encoded
     """
 
     SUBSCRIBE_GLOB = auto()
     """The subscriber wants to receive messages to utf-8 decodable topics which match
-    a given glob pattern
+    a given glob pattern. If the subscriber is already subscribed to the glob, the
+    recovery url is ignored and no changes are made
+
     
     ### headers
     - authorization: proof the subscriber is authorized to subscribe to the pattern
@@ -52,6 +59,9 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - N bytes: the url that the subscriber can be reached at, utf-8 encoded
     - 2 bytes (M): the length of the glob pattern, big-endian, unsigned
     - M bytes: the glob pattern, utf-8 encoded
+    - 2 bytes (R): either 0, to indicate no missed messages are desired, or the length
+      of the url to post missed messages to, big-endian, unsigned
+    - R bytes: the url to post missed messages to, utf-8 encoded
     """
 
     UNSUBSCRIBE_EXACT = auto()
@@ -93,14 +103,16 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     
     ```
     URL<url_length><url>
+    RECOVERY<recovery_length><recovery>
     EXACT<topic_length><topic><topic_length><topic>
     GLOB<glob_length><glob><glob_length><glob>
     ```
 
-    where URL, EXACT and GLOB are the ascii-representations and there are 3
-    guarranteed newlines as shown (including a trailing newline). Note that URL,
-    EXACT, GLOB, and newlines may show up within topics/globs. The topics and globs
-    must be sorted in (bytewise) lexicographical order
+    where URL, RECOVERY, EXACT and GLOB are the ascii-representations and there
+    are 4 guarranteed newlines as shown (including a trailing newline). Note
+    that URL, RECOVERY, EXACT, GLOB, and newlines may show up within
+    topics/globs. The topics and globs must be sorted in (bytewise)
+    lexicographical order
 
     ### headers
     - authorization: proof the subscriber is authorized to check the subscriptions for the url
@@ -141,6 +153,8 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     ### request body
     - 2 bytes (N): length of the subscriber url to set, big-endian, unsigned
     - N bytes: the url to set, utf-8 encoded
+    - 2 bytes (R): the length of the recovery url, big-endian, unsigned
+    - R bytes: the recovery url, utf-8 encoded
     - 1 byte (reserved for etag format): 0
     - 64 bytes: the strong etag, will be rechecked
     - 4 bytes (E): the number of exact topics to set, big-endian, unsigned
@@ -198,4 +212,18 @@ class BroadcasterToSubscriberStatelessMessageType(IntEnum):
 
     ### body
     the message that was posted to the topic
+    """
+
+    MISSED = auto()
+    """The broadcaster is notifying the subscriber they previously failed to send
+    a message to the subscriber about a message on a topic the subscriber was
+    subscribed to. This is an important primitive for using persistent topics
+    via log channels.
+
+    ### headers
+    - authorization: proof the broadcaster can notify the subscriber
+    - x-topic: the topic the message was posted to
+
+    ### body
+    none
     """
