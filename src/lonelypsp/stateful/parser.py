@@ -24,6 +24,7 @@ from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceivePars
 from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustomParser
 from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustomParser
 from lonelypsp.stateful.messages.enable_zstd_preset import B2S_EnableZstdPresetParser
+from lonelypsp.stateful.messages.missed import B2S_MissedParser
 from lonelypsp.stateful.messages.notify import S2B_NotifyParser
 from lonelypsp.stateful.messages.notify_stream import S2B_NotifyStreamParser
 from lonelypsp.stateful.messages.receive_stream import B2S_ReceiveStreamParser
@@ -63,6 +64,7 @@ B2S_MESSAGE_PARSERS: List[Type[B2S_MessageParser[B2S_Message]]] = [
     B2S_DisableZstdCustomParser,
     B2S_EnableZstdCustomParser,
     B2S_EnableZstdPresetParser,
+    B2S_MissedParser,
     B2S_ReceiveStreamParser,
 ]
 """All of the message parsers for broadcaster -> subscriber messages. Generally,

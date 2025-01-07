@@ -404,3 +404,17 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
     ### body
     none
     """
+
+    MISSED = auto()
+    """Indicates that the broadcaster may have failed to send some messages on relevant
+    topics to this subscriber. This happens when there are multiple broadcasters and a
+    relevant message was posted to a different broadcaster than the one this websocket is
+    connected with, and that other broadcaster failed to reach this broadcaster.
+
+    ### headers
+    authorization (recovery: websocket:<nonce>:<ctr>)
+    x-topic: the topic that the subscriber may have missed messages on
+
+    ### body
+    none
+    """

@@ -17,6 +17,7 @@ from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceive
 from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustom
 from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustom
 from lonelypsp.stateful.messages.enable_zstd_preset import B2S_EnableZstdPreset
+from lonelypsp.stateful.messages.missed import B2S_Missed
 from lonelypsp.stateful.messages.notify import S2B_Notify
 from lonelypsp.stateful.messages.notify_stream import S2B_NotifyStream
 from lonelypsp.stateful.messages.receive_stream import B2S_ReceiveStream
@@ -53,6 +54,7 @@ B2S_Message = Union[
     B2S_DisableZstdCustom,
     B2S_EnableZstdCustom,
     B2S_EnableZstdPreset,
+    B2S_Missed,
     B2S_ReceiveStream,
 ]
 """Type alias for any message from a broadcaster to a subscriber"""
