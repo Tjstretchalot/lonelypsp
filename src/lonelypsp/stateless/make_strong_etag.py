@@ -14,12 +14,44 @@ class StrongEtag:
     """the SHA512 hash of the document"""
 
 
+@fast_dataclass
+class GlobAndRecovery:
+    glob: str
+    recovery: Optional[str]
+
+
+@fast_dataclass
+class TopicAndRecovery:
+    topic: bytes
+    recovery: Optional[str]
+
+
+def _encode_recovery(recovery: Optional[str]) -> bytes:
+    if recovery is None:
+        return b""
+    return recovery.encode("utf-8")
+
+
+class _PreallocatedBytesIO:
+    def __init__(self, size: int) -> None:
+        self.buf = bytearray(size)
+        self.pos = 0
+
+    def write(self, data: bytes) -> None:
+        assert self.pos + len(data) <= len(self.buf)
+        self.buf[self.pos : self.pos + len(data)] = data
+        self.pos += len(data)
+
+    def getbuf(self) -> bytearray:
+        assert self.pos == len(self.buf)
+        return self.buf
+
+
 def make_strong_etag(
     url: str,
-    topics: List[bytes],
-    globs: List[str],
+    topics: List[TopicAndRecovery],
+    globs: List[GlobAndRecovery],
     *,
-    recovery: Optional[str],
     recheck_sort: bool = True
 ) -> StrongEtag:
     """Generates the strong etag for `CHECK_SUBSCRIPTIONS` and
@@ -36,13 +68,13 @@ def make_strong_etag(
 
     if recheck_sort:
         for idx, topic in enumerate(topics):
-            if idx > 0 and topic <= topics[idx - 1]:
+            if idx > 0 and topic.topic <= topics[idx - 1].topic:
                 raise ValueError(
                     "topics must be unique and in ascending lexicographic order"
                 )
 
         for idx, glob in enumerate(globs):
-            if idx > 0 and glob <= globs[idx - 1]:
+            if idx > 0 and glob.glob <= globs[idx - 1].glob:
                 raise ValueError(
                     "globs must be unique and in ascending lexicographic order"
                 )
@@ -54,24 +86,22 @@ def make_strong_etag(
     doc.write(len(encoded_url).to_bytes(2, "big"))
     doc.write(encoded_url)
 
-    doc.write(b"\nRECOVERY")
-    if recovery is None:
-        doc.write(b"\0")
-    else:
-        encoded_recovery_url = recovery.encode("utf-8")
-        doc.write(len(encoded_recovery_url).to_bytes(2, "big"))
-        doc.write(encoded_recovery_url)
-
     doc.write(b"\nEXACT")
     for topic in topics:
-        doc.write(len(topic).to_bytes(2, "big"))
-        doc.write(topic)
+        doc.write(len(topic.topic).to_bytes(2, "big"))
+        doc.write(topic.topic)
+        encoded_recovery = _encode_recovery(topic.recovery)
+        doc.write(len(encoded_recovery).to_bytes(2, "big"))
+        doc.write(encoded_recovery)
 
     doc.write(b"\nGLOB")
     for glob in globs:
-        encoded_glob = glob.encode("utf-8")
+        encoded_glob = glob.glob.encode("utf-8")
         doc.write(len(encoded_glob).to_bytes(2, "big"))
         doc.write(encoded_glob)
+        encoded_recovery = _encode_recovery(glob.recovery)
+        doc.write(len(encoded_recovery).to_bytes(2, "big"))
+        doc.write(encoded_recovery)
 
     doc.write(b"\n")
     etag = hashlib.sha512(doc.getvalue()).digest()
@@ -86,7 +116,7 @@ class StrongEtagGeneratorAtGlobs:
         self._recheck_sort = recheck_sort
         self._last_glob: Optional[bytes] = None
 
-    def add_glob(self, *globs: str) -> "StrongEtagGeneratorAtGlobs":
+    def add_glob(self, *globs: GlobAndRecovery) -> "StrongEtagGeneratorAtGlobs":
         """Add the given glob or globs to the strong etag; multiple globs can be
         faster than calling add_glob multiple times as it reduces calls to the
         underlying hasher's update method, but requires more memory
@@ -94,7 +124,7 @@ class StrongEtagGeneratorAtGlobs:
         if len(globs) == 0:
             return self
 
-        encoded_globs = [g.encode("utf-8") for g in globs]
+        encoded_globs = [g.glob.encode("utf-8") for g in globs]
 
         if self._recheck_sort:
             for g in encoded_globs:
@@ -104,15 +134,20 @@ class StrongEtagGeneratorAtGlobs:
                     )
                 self._last_glob = g
 
-        buf = bytearray(2 * len(globs) + sum(len(g) for g in encoded_globs))
-        pos = 0
-        for encoded_glob in encoded_globs:
-            buf[pos : pos + 2] = len(encoded_glob).to_bytes(2, "big")
-            pos += 2
-            buf[pos : pos + len(encoded_glob)] = encoded_glob
-            pos += len(encoded_glob)
+        encoded_recoveries = [_encode_recovery(g.recovery) for g in globs]
 
-        self.hasher.update(buf)
+        buf = _PreallocatedBytesIO(
+            4 * len(globs)
+            + sum(len(g) for g in encoded_globs)
+            + sum(len(r) for r in encoded_recoveries)
+        )
+        for encoded_glob, encoded_recovery in zip(encoded_globs, encoded_recoveries):
+            buf.write(len(encoded_glob).to_bytes(2, "big"))
+            buf.write(encoded_glob)
+            buf.write(len(encoded_recovery).to_bytes(2, "big"))
+            buf.write(encoded_recovery)
+
+        self.hasher.update(buf.getbuf())
         return self
 
     def finish(self) -> StrongEtag:
@@ -128,7 +163,7 @@ class StrongEtagGeneratorAtTopics:
         self._recheck_sort = recheck_sort
         self._last_topic: Optional[bytes] = None
 
-    def add_topic(self, *topic: bytes) -> "StrongEtagGeneratorAtTopics":
+    def add_topic(self, *topic: TopicAndRecovery) -> "StrongEtagGeneratorAtTopics":
         """Add the given topic or topics to the strong etag; multiple topics can be
         faster than calling add_topic multiple times as it reduces calls to the
         underlying hasher's update method, but requires more memory
@@ -138,21 +173,26 @@ class StrongEtagGeneratorAtTopics:
 
         if self._recheck_sort:
             for t in topic:
-                if self._last_topic is not None and t <= self._last_topic:
+                if self._last_topic is not None and t.topic <= self._last_topic:
                     raise ValueError(
                         "topics must be unique and in ascending lexicographic order"
                     )
-                self._last_topic = t
+                self._last_topic = t.topic
 
-        buf = bytearray(2 * len(topic) + sum(len(t) for t in topic))
-        pos = 0
-        for t in topic:
-            buf[pos : pos + 2] = len(t).to_bytes(2, "big")
-            pos += 2
-            buf[pos : pos + len(t)] = t
-            pos += len(t)
+        encoded_recoveries = [_encode_recovery(t.recovery) for t in topic]
 
-        self.hasher.update(buf)
+        buf = _PreallocatedBytesIO(
+            4 * len(topic)
+            + sum(len(t.topic) for t in topic)
+            + sum(len(r) for r in encoded_recoveries)
+        )
+        for t, r in zip(topic, encoded_recoveries):
+            buf.write(len(t.topic).to_bytes(2, "big"))
+            buf.write(t.topic)
+            buf.write(len(r).to_bytes(2, "big"))
+            buf.write(r)
+
+        self.hasher.update(buf.getbuf())
         return self
 
     def finish_topics(self) -> StrongEtagGeneratorAtGlobs:
@@ -160,19 +200,8 @@ class StrongEtagGeneratorAtTopics:
         return StrongEtagGeneratorAtGlobs(self.hasher, recheck_sort=self._recheck_sort)
 
 
-class _PreallocatedBytesIO:
-    def __init__(self, size: int) -> None:
-        self.buf = bytearray(size)
-        self.pos = 0
-
-    def write(self, data: bytes) -> None:
-        assert self.pos + len(data) <= len(self.buf)
-        self.buf[self.pos : self.pos + len(data)] = data
-        self.pos += len(data)
-
-
 def create_strong_etag_generator(
-    url: str, *, recovery: Optional[str], recheck_sort: bool = True
+    url: str, *, recheck_sort: bool = True
 ) -> StrongEtagGeneratorAtTopics:
     """Returns a StrongEtagGeneratorAtTopics that can be used to add topics and
     globs to the strong etag, then call finish_topics() to get the generator for
@@ -184,10 +213,16 @@ def create_strong_etag_generator(
 
     ```python
     etag = (
-        create_strong_etag_generator("https://example.com", recovery=None, recheck_sort=False)
-        .add_topic(b"topic1", b"topic2")
+        create_strong_etag_generator("https://example.com", recheck_sort=False)
+        .add_topic(
+            TopicAndRecovery(b"topic1", "recovery1"),
+            TopicAndRecovery(b"topic2", "recovery2")
+        )
         .finish_topics()
-        .add_glob("glob1", "glob2")
+        .add_glob(
+            GlobAndRecovery("glob1", "recovery3"),
+            GlobAndRecovery("glob2", "recovery4")
+        )
         .finish()
     )
     ```
@@ -199,18 +234,12 @@ def create_strong_etag_generator(
     the topics and globs are sorted properly
     """
     encoded_url = url.encode("utf-8")
-    encoded_recovery = b"" if recovery is None else recovery.encode("utf-8")
-    buf = _PreallocatedBytesIO(
-        3 + 2 + len(encoded_url) + 9 + 2 + len(encoded_recovery) + 6
-    )
+    buf = _PreallocatedBytesIO(3 + 2 + len(encoded_url) + 6)
 
     buf.write(b"URL")
     buf.write(len(encoded_url).to_bytes(2, "big"))
     buf.write(encoded_url)
-    buf.write(b"\nRECOVERY")
-    buf.write(len(encoded_recovery).to_bytes(2, "big"))
-    buf.write(encoded_recovery)
     buf.write(b"\nEXACT")
 
-    hasher = hashlib.sha512(buf.buf)
+    hasher = hashlib.sha512(buf.getbuf())
     return StrongEtagGeneratorAtTopics(hasher, recheck_sort=recheck_sort)

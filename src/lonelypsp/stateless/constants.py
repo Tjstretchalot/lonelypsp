@@ -103,9 +103,8 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     
     ```
     URL<url_length><url>
-    RECOVERY<recovery_length><recovery>
-    EXACT<topic_length><topic><topic_length><topic>
-    GLOB<glob_length><glob><glob_length><glob>
+    EXACT<topic_length><topic><recovery_length><recovery><...>
+    GLOB<glob_length><glob><recovery_length><recovery><...>
     ```
 
     where URL, RECOVERY, EXACT and GLOB are the ascii-representations and there
@@ -153,18 +152,22 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     ### request body
     - 2 bytes (N): length of the subscriber url to set, big-endian, unsigned
     - N bytes: the url to set, utf-8 encoded
-    - 2 bytes (R): the length of the recovery url, big-endian, unsigned
-    - R bytes: the recovery url, utf-8 encoded
     - 1 byte (reserved for etag format): 0
     - 64 bytes: the strong etag, will be rechecked
     - 4 bytes (E): the number of exact topics to set, big-endian, unsigned
     - REPEAT E TIMES: (in ascending lexicographic order of the topics)
       - 2 bytes (L): length of the topic, big-endian, unsigned
       - L bytes: the topic
+      - 2 bytes (R): the length of the recovery url, big-endian, unsigned,
+        may be 0 for no recovery url
+      - R bytes: the recovery url, utf-8 encoded
     - 4 bytes (G): the number of glob patterns to set, big-endian, unsigned
     - REPEAT G TIMES: (in ascending lexicographic order of the globs)
       - 2 bytes (L): length of the glob pattern, big-endian, unsigned
       - L bytes: the glob pattern, utf-8 encoded
+      - 2 bytes (R): the length of the recovery url, big-endian, unsigned,
+        may be 0 for no recovery url
+      - R bytes: the recovery url, utf-8 encoded
 
     ### response body
     empty
