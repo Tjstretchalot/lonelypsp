@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
+from typing import TYPE_CHECKING, Collection, List, Literal, Optional, Type, Union
 
 from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (
@@ -27,8 +27,14 @@ class B2S_ConfirmConfigure:
     broadcaster_nonce: bytes
     """32 random bytes representing the broadcasters contribution to the connection nonce"""
 
+    authorization: Optional[str]
+    """variable length proof that the broadcaster is allowed to serve the subscriber
+    
+    empty strings are converted to None for consistency with http endpoints
+    """
 
-_headers: Collection[str] = ("x-broadcaster-nonce",)
+
+_headers: Collection[str] = ("x-broadcaster-nonce", "authorization")
 
 
 class B2S_ConfirmConfigureParser:
@@ -52,9 +58,18 @@ class B2S_ConfirmConfigureParser:
         if len(broadcaster_nonce) != 32:
             raise ValueError("x-broadcaster-nonce must be 32 bytes")
 
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
         return B2S_ConfirmConfigure(
             type=type,
             broadcaster_nonce=broadcaster_nonce,
+            authorization=authorization,
         )
 
 
@@ -69,7 +84,10 @@ def serialize_b2s_confirm_configure(
     return serialize_simple_message(
         type=msg.type,
         header_names=_headers,
-        header_values=(msg.broadcaster_nonce,),
+        header_values=(
+            msg.broadcaster_nonce,
+            msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+        ),
         payload=b"",
         minimal_headers=minimal_headers,
     )

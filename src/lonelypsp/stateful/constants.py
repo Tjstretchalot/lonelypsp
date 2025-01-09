@@ -53,6 +53,8 @@ class SubscriberToBroadcasterStatefulMessageType(IntEnum):
     - x-initial-dict: 2 bytes, big-endian, unsigned. 0 to indicate the client does not
       have a specific preset dictionary in mind to use, otherwise, the id of the preset
       dictionary the client thinks is a good fit for this connection
+    - x-authorization: variable length, utf-8 encoded, verifies this subscriber is allowed
+      to subscribe via websocket in this manner
 
     ### body
     none
@@ -217,6 +219,8 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
         the counter changes every time an authorization header is provided,
         even within a single "operation", so e.g. a Notify Stream message broken
         into 6 parts will change the counter 6 times.
+    - x-authorization: variable length, utf-8 encoded, verifies this broadcaster
+      is who the subscriber expects
     
     ### body
 

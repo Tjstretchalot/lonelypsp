@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
+from typing import TYPE_CHECKING, Collection, List, Literal, Optional, Type, Union
 
 from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (
@@ -43,12 +43,20 @@ class S2B_Configure:
     enough for the cost of training a connection specific dictionary to be properly amortized.
     """
 
+    authorization: Optional[str]
+    """the authorization header provided by the subscriber to show the broadcaster it
+    is allowed to connect
+
+    empty strings are converted to None for consistency with http endpoints
+    """
+
 
 _headers: Collection[str] = (
     "x-subscriber-nonce",
     "x-enable-zstd",
     "x-enable-training",
     "x-initial-dict",
+    "x-authorization",
 )
 
 
@@ -84,12 +92,21 @@ class S2B_ConfigureParser:
         if initial_dict < 0:
             raise ValueError("x-initial-dict must be non-negative")
 
+        authorization_bytes = headers["x-authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("x-authorization must be a utf-8 string")
+
         return S2B_Configure(
             type=type,
             subscriber_nonce=subscriber_nonce,
             enable_zstd=enable_zstd,
             enable_training=enable_training,
             initial_dict=initial_dict,
+            authorization=authorization,
         )
 
 
@@ -109,6 +126,7 @@ def serialize_s2b_configure(
             b"\x01" if msg.enable_zstd else b"\x00",
             b"\x01" if msg.enable_training else b"\x00",
             msg.initial_dict.to_bytes(2, "big"),
+            msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
         ),
         payload=b"",
         minimal_headers=minimal_headers,
