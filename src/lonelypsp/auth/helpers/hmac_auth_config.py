@@ -13,6 +13,7 @@ from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.messages.configure import S2B_Configure
 from lonelypsp.stateful.messages.confirm_configure import B2S_ConfirmConfigure
 from lonelypsp.stateless.make_strong_etag import StrongEtag
+from lonelypsp.util.cancel_and_check import cancel_and_check
 
 if TYPE_CHECKING:
     from lonelypsp.auth.config import (
@@ -155,8 +156,7 @@ class IncomingHmacAuthSqliteDBConfig:
         self.cursor = None
         try:
             if task is not None:
-                task.cancel()
-                await asyncio.wait([task])
+                await cancel_and_check(task)
         finally:
             try:
                 if cursor is not None:
@@ -196,11 +196,11 @@ class IncomingHmacAuthSqliteDBConfig:
             cursor.execute("BEGIN IMMEDIATE TRANSACTION")
             try:
                 cursor.execute(
-                    "DELETE FROM httppubsub_hmac_auth_tokens WHERE expires_at < ?",
+                    "DELETE FROM httppubsub_hmacs WHERE expires_at < ?",
                     (math.floor(now),),
                 )
                 cursor.execute(
-                    "SELECT expires_at FROM httppubsub_hmac_auth_tokens ORDER BY expires_at ASC LIMIT 1"
+                    "SELECT expires_at FROM httppubsub_hmacs ORDER BY expires_at ASC LIMIT 1"
                 )
                 next_expires_at = cast(Optional[int], cursor.fetchone())
                 cursor.execute("COMMIT")
