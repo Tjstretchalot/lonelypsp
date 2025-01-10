@@ -183,8 +183,8 @@ class SubscriberToBroadcasterStatelessResponseType(IntEnum):
     """Used when no specific meaning was understood about the response"""
 
     UNSUBSCRIBE_IMMEDIATE = auto()
-    """When sent in response to a RECEIVE message, removes whatever subscription
-    caused the subscriber to receive the message
+    """When sent in response to a RECEIVE message with a 4xx status code, removes
+    whatever subscription caused the subscriber to receive the message
 
     The body is a json object with at least the following keys:
     - `unsubscribe`: the value `true`
@@ -193,6 +193,16 @@ class SubscriberToBroadcasterStatelessResponseType(IntEnum):
     - `reason`: a human-readable string indicating if the subscriber didn't
       like the format of the message vs just wasn't expecting a message on that
       topic vs was expecting the message but no longer wants more
+    """
+
+    MULTIPLE_SUBSCRIBERS = auto()
+    """When sent in response to a RECEIVE message with a 2xx status code, indicates
+    that this should be counted as a successful delivery to multiple
+    subscribers.
+
+    The body is a json object with at least the following keys
+    - `subscribers`: the number of subscribers that should be counted as
+      (a non-negative integer)
     """
 
 
