@@ -332,6 +332,7 @@ def serialize_s2b_notify_stream(
                 msg.topic,
                 b"\x00",
                 int_to_minimal_unsigned(msg.uncompressed_length),
+                int_to_minimal_unsigned(msg.uncompressed_length),
                 msg.unverified_uncompressed_sha512,
             ),
             payload=msg.payload,
