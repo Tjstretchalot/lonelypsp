@@ -48,6 +48,9 @@ class B2S_ReceiveStreamStartUncompressed:
     minimal headers mode and expanded headers mode
     """
 
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
     identifier: bytes
     """an arbitrary identifier for this notification assigned by the broadcaster; max 64 bytes
     """
@@ -93,6 +96,9 @@ class B2S_ReceiveStreamStartCompressed:
     an empty string is reinterpreted as None for consistency between
     minimal headers mode and expanded headers mode
     """
+
+    tracing: bytes
+    """the tracing data, which may be empty"""
 
     identifier: bytes
     """an arbitrary identifier for this notification assigned by the broadcaster; max 64 bytes
@@ -143,6 +149,9 @@ class B2S_ReceiveStreamContinuation:
     minimal headers mode and expanded headers mode
     """
 
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
     identifier: bytes
     """an arbitrary identifier for this notification assigned by the broadcaster; max 64 bytes
     """
@@ -163,6 +172,7 @@ B2S_ReceiveStream = Union[
 
 _basic_headers: Collection[str] = (
     "authorization",
+    "x-tracing",
     "x-identifier",
     "x-part-id",
 )
@@ -202,6 +212,7 @@ class B2S_ReceiveStreamParser:
                 parse_minimal_message_headers(payload)
             ) as parser:
                 headers["authorization"] = next(parser)
+                headers["x-tracing"] = next(parser)
                 headers["x-identifier"] = next(parser)
 
                 part_id_bytes = next(parser)
@@ -218,10 +229,15 @@ class B2S_ReceiveStreamParser:
         else:
             headers = parse_expanded_headers(payload)
 
-        authorization_bytes = headers.get("authorization", b"")
-        authorization = (
-            None if authorization_bytes == b"" else authorization_bytes.decode("utf-8")
-        )
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
 
         identifier = headers["x-identifier"]
         if len(identifier) > 64:
@@ -237,6 +253,7 @@ class B2S_ReceiveStreamParser:
             return B2S_ReceiveStreamContinuation(
                 type=type,
                 authorization=authorization,
+                tracing=tracing,
                 identifier=identifier,
                 part_id=part_id,
                 payload=payload.read(-1),
@@ -274,6 +291,7 @@ class B2S_ReceiveStreamParser:
             return B2S_ReceiveStreamStartUncompressed(
                 type=type,
                 authorization=authorization,
+                tracing=tracing,
                 identifier=identifier,
                 part_id=None,
                 topic=topic,
@@ -286,6 +304,7 @@ class B2S_ReceiveStreamParser:
         return B2S_ReceiveStreamStartCompressed(
             type=type,
             authorization=authorization,
+            tracing=tracing,
             identifier=identifier,
             part_id=None,
             topic=topic,
@@ -315,6 +334,7 @@ def serialize_b2s_receive_stream(
             header_names=_basic_headers,
             header_values=(
                 authorization_bytes,
+                msg.tracing,
                 msg.identifier,
                 int_to_minimal_unsigned(msg.part_id),
             ),
@@ -328,6 +348,7 @@ def serialize_b2s_receive_stream(
             header_names=_total_start_headers,
             header_values=(
                 authorization_bytes,
+                msg.tracing,
                 msg.identifier,
                 b"\x00",
                 msg.topic,
@@ -345,6 +366,7 @@ def serialize_b2s_receive_stream(
         header_names=_total_start_headers,
         header_values=(
             authorization_bytes,
+            msg.tracing,
             msg.identifier,
             b"\x00",
             msg.topic,

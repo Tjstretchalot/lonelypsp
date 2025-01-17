@@ -53,8 +53,9 @@ class SubscriberToBroadcasterStatefulMessageType(IntEnum):
     - x-initial-dict: 2 bytes, big-endian, unsigned. 0 to indicate the client does not
       have a specific preset dictionary in mind to use, otherwise, the id of the preset
       dictionary the client thinks is a good fit for this connection
-    - x-authorization: variable length, utf-8 encoded, verifies this subscriber is allowed
+    - authorization: variable length, utf-8 encoded, verifies this subscriber is allowed
       to subscribe via websocket in this manner
+    - x-tracing: variable length tracing data, see `Tracing` in readme
 
     ### body
     none
@@ -65,7 +66,8 @@ class SubscriberToBroadcasterStatefulMessageType(IntEnum):
     already subscribed, the broadcaster will disconnect the subscriber.
     
     ### headers 
-    - authorization (url: websocket:<nonce>:<ctr>)
+    - authorization (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
     - x-topic: the topic to subscribe to
 
     ### body
@@ -77,7 +79,8 @@ class SubscriberToBroadcasterStatefulMessageType(IntEnum):
     already subscribed to this exact glob, the broadcaster will disconnect the subscriber.
     
     ### headers
-    - authorization (url: websocket:<nonce>:<ctr>)
+    - authorization (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
     - x-glob: the glob pattern to subscribe to (must be valid utf-8)
 
     ### body
@@ -89,7 +92,8 @@ class SubscriberToBroadcasterStatefulMessageType(IntEnum):
     the broadcaster will disconnect the subscriber.
     
     ### headers 
-    - authorization (url: websocket:<nonce>:<ctr>)
+    - authorization (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
     - x-topic: the topic to unsubscribe from
 
     ### body
@@ -101,7 +105,8 @@ class SubscriberToBroadcasterStatefulMessageType(IntEnum):
     the broadcaster will disconnect the subscriber.
 
     ### headers
-    - authorization (url: websocket:<nonce>:<ctr>)
+    - authorization (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
     - x-glob: the glob pattern to unsubscribe from
 
     ### body
@@ -115,7 +120,8 @@ class SubscriberToBroadcasterStatefulMessageType(IntEnum):
 
     
     ### headers
-    - authorization (url: websocket:<nonce>:<ctr>, see below)
+    - authorization (url: websocket:<nonce>:<ctr>, see below) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
     - x-identifier identifies the notification so the broadcaster can confirm it
     - x-topic is the topic of the notification
     - x-compressor is a big-endian unsigned integer representing one of the previous
@@ -147,7 +153,8 @@ class SubscriberToBroadcasterStatefulMessageType(IntEnum):
     The following 3 headers are always required, and when using minimal headers, they
     always appear first and in this order:
 
-    - authorization (url: websocket:<nonce>:<ctr>)
+    - authorization (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
     - x-identifier relates the different websocket messages. arbitrary blob, max 64 bytes
     - x-part-id starts at 0 and increments by 1 for each part. unsigned, big-endian, max 8 bytes
     
@@ -172,6 +179,8 @@ class SubscriberToBroadcasterStatefulMessageType(IntEnum):
     ### headers
     - x-identifier: the identifier of the notification the subscriber needs more parts for
     - x-part-id: the part id that the subscriber received up to, big-endian, unsigned, max 8 bytes
+    - authorization: (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
 
     ### body
     none
@@ -182,6 +191,11 @@ class SubscriberToBroadcasterStatefulMessageType(IntEnum):
 
     ### headers
     - x-identifier: the identifier of the notification that was received
+    - authorization: (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
+    - x-num-subscribers: the number of subscribers that received the notification, 
+        big-endian, unsigned, max 4 bytes. typically 1, but can be more if the subscriber
+        forwarded the message to other subscribers
 
     ### body
     none
@@ -219,8 +233,9 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
         the counter changes every time an authorization header is provided,
         even within a single "operation", so e.g. a Notify Stream message broken
         into 6 parts will change the counter 6 times.
-    - x-authorization: variable length, utf-8 encoded, verifies this broadcaster
+    - authorization: variable length, utf-8 encoded, verifies this broadcaster
       is who the subscriber expects
+    - x-tracing: variable length tracing data, see `Tracing` in readme
     
     ### body
 
@@ -233,6 +248,8 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
 
     ### headers
     - x-topic: the topic that the subscriber is now subscribed to
+    - authorization: (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
 
     ### body
     none
@@ -251,6 +268,8 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
 
     ### headers
     - x-glob: the glob pattern that the subscriber is now subscribed to
+    - authorization: (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
 
     ### body
     none
@@ -262,6 +281,8 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
 
     ### headers
     - x-topic: the topic that the subscriber is now unsubscribed from
+    - authorization: (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
 
     ### body
     none
@@ -276,6 +297,8 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
 
     ### headers
     - x-glob: the glob pattern that the subscriber is now unsubscribed from
+    - authorization: (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
 
     ### body
     none
@@ -291,6 +314,8 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
     - x-identifier: the identifier of the notification that was sent
     - x-subscribers: the number of subscribers that received the notification, big-endian,
         unsigned, max 8 bytes
+    - authorization: (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
 
     ### body
     none
@@ -304,6 +329,8 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
     ### headers
     - x-identifier: the identifier of the notification the broadcaster needs more parts for
     - x-part-id: the part id that broadcaster received up to, big-endian, unsigned, max 8 bytes
+    - authorization: (url: websocket:<nonce>:<ctr>) variable length, utf-8 encoded
+    - x-tracing: variable length tracing data, see `Tracing` in readme
 
     ### body
     none
@@ -322,6 +349,7 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
     always appear first and in this order:
 
     - authorization (url: websocket:<nonce>:<ctr>)
+    - x-tracing: variable length tracing data, see `Tracing` in readme
     - x-identifier relates the different websocket messages. arbitrary blob, max 64 bytes
     - x-part-id starts at 0 and increments by 1 for each part. unsigned, big-endian, max 8 bytes
     
@@ -350,17 +378,19 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
     actually sending any data. This typically means they just have them on their local disk
 
     ### headers
-    x-identifier: which compressor is enabled, unsigned, big-endian, max 2 bytes, min 1.
+    - x-identifier: which compressor is enabled, unsigned, big-endian, max 2 bytes, min 1.
         A value of 1 means compression without a custom dictionary.
-    x-compression-level: what compression level the broadcaster will use with
+    - x-compression-level: what compression level the broadcaster will use with
         this dictionary. signed, big-endian, max 2 bytes, max 22. the subscriber
         is free to choose a different compression level
-    x-min-size: 4 bytes, big-endian, unsigned. a hint to the subscriber for the smallest
+    - x-min-size: 4 bytes, big-endian, unsigned. a hint to the subscriber for the smallest
         payload the broadcaster will apply this compressor to. the subscriber can use this
         compressor on smaller messages if it wants
-    x-max-size: 8 bytes, big-endian, unsigned. a hint to the susbcriber for the largest
+    - x-max-size: 8 bytes, big-endian, unsigned. a hint to the susbcriber for the largest
         payload for which the broadcaster will use this compressor. uses 2**64-1 to indicate
         no upper bound. the client can use this compressor on larger messages if it wants
+    - authorization (url: websocket:<nonce>:<ctr>)
+    - x-tracing: variable length tracing data, see `Tracing` in readme
 
     ### body
     none
@@ -381,17 +411,20 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
     the most recent one.
 
     ### headers
-    x-identifier: the identifier assigned to the compressor formed with this dictionary.
+    - x-identifier: the identifier assigned to the compressor formed with this dictionary.
         unsigned, big-endian, max 8 bytes, min 65536
-    x-compression-level: what compression level the broadcaster will use with
+    - x-compression-level: what compression level the broadcaster will use with
         this dictionary. signed, big-endian, max 2 bytes, max 22. the subscriber
         is free to choose a different compression level
-    x-min-size: max 4 bytes, big-endian, unsigned. a hint to the subscriber for the smallest
+    - x-min-size: max 4 bytes, big-endian, unsigned. a hint to the subscriber for the smallest
         payload the broadcaster will apply this compressor to. the subscriber can use this
         compressor on smaller messages if it wants
-    x-max-size: max 8 bytes, big-endian, unsigned. a hint to the subscriber for the largest
+    - x-max-size: max 8 bytes, big-endian, unsigned. a hint to the subscriber for the largest
         payload for which the broadcaster will use this compressor. uses 2**64-1 to indicate
         no upper bound. the client can use this compressor on larger messages if it wants.
+    - authorization (url: websocket:<nonce>:<ctr>)
+    - x-tracing: variable length tracing data, see `Tracing` in readme
+    - x-sha512: the sha-512 hash of the dictionary
 
     ### body
     the dictionary to use for compression.
@@ -402,8 +435,10 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
     dictionary and that it will no longer send messages compressed with a given dictionary.
     
     ### headers
-    x-identifier: the identifier assigned to the compressor formed with this dictionary.
+    - x-identifier: the identifier assigned to the compressor formed with this dictionary.
         unsigned, big-endian, max 8 bytes, min 65536
+    - authorization (url: websocket:<nonce>:<ctr>)
+    - x-tracing: variable length tracing data, see `Tracing` in readme
     
     ### body
     none
@@ -416,8 +451,9 @@ class BroadcasterToSubscriberStatefulMessageType(IntEnum):
     connected with, and that other broadcaster failed to reach this broadcaster.
 
     ### headers
-    authorization (recovery: websocket:<nonce>:<ctr>)
-    x-topic: the topic that the subscriber may have missed messages on
+    - authorization (recovery: websocket:<nonce>:<ctr>)
+    - x-tracing: variable length tracing data, see `Tracing` in readme
+    - x-topic: the topic that the subscriber may have missed messages on
 
     ### body
     none

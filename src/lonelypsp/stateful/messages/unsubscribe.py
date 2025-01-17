@@ -31,11 +31,14 @@ class S2B_UnsubscribeExact:
     minimal headers mode and expanded headers mode
     """
 
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
     topic: bytes
     """the topic to unsubscribe from"""
 
 
-_exact_headers: Collection[str] = ("authorization", "x-topic")
+_exact_headers: Collection[str] = ("authorization", "x-tracing", "x-topic")
 
 
 class S2B_UnsubscribeExactParser:
@@ -55,15 +58,22 @@ class S2B_UnsubscribeExactParser:
         assert type == SubscriberToBroadcasterStatefulMessageType.UNSUBSCRIBE_EXACT
 
         headers = parse_simple_headers(flags, payload, _exact_headers)
-        authorization_bytes = headers.get("authorization", b"")
-        authorization = (
-            None if not authorization_bytes else authorization_bytes.decode("utf-8")
-        )
+
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
 
         topic = headers["x-topic"]
         return S2B_UnsubscribeExact(
             type=type,
             authorization=authorization,
+            tracing=tracing,
             topic=topic,
         )
 
@@ -81,6 +91,7 @@ def serialize_s2b_unsubscribe_exact(
         header_names=_exact_headers,
         header_values=(
             b"" if msg.authorization is None else msg.authorization.encode("utf-8"),
+            msg.tracing,
             msg.topic,
         ),
         minimal_headers=minimal_headers,
@@ -109,11 +120,14 @@ class S2B_UnsubscribeGlob:
     minimal headers mode and expanded headers mode
     """
 
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
     glob: str
     """the glob pattern to unsubscribe from"""
 
 
-_glob_headers: Collection[str] = ("authorization", "x-glob")
+_glob_headers: Collection[str] = ("authorization", "x-tracing", "x-glob")
 
 
 class S2B_UnsubscribeGlobParser:
@@ -133,15 +147,22 @@ class S2B_UnsubscribeGlobParser:
         assert type == SubscriberToBroadcasterStatefulMessageType.UNSUBSCRIBE_GLOB
 
         headers = parse_simple_headers(flags, payload, _glob_headers)
-        authorization_bytes = headers.get("authorization", b"")
-        authorization = (
-            None if not authorization_bytes else authorization_bytes.decode("utf-8")
-        )
+
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
 
         glob = headers["x-glob"].decode("utf-8")
         return S2B_UnsubscribeGlob(
             type=type,
             authorization=authorization,
+            tracing=tracing,
             glob=glob,
         )
 
@@ -159,6 +180,7 @@ def serialize_s2b_unsubscribe_glob(
         header_names=_glob_headers,
         header_values=(
             b"" if msg.authorization is None else msg.authorization.encode("utf-8"),
+            msg.tracing,
             msg.glob.encode("utf-8"),
         ),
         minimal_headers=minimal_headers,

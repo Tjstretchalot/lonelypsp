@@ -33,6 +33,9 @@ class S2B_NotifyUncompressed:
     minimal headers mode and expanded headers mode
     """
 
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
     identifier: bytes
     """an arbitrary identifier for this notification assigned by the subscriber; max 64 bytes
     """
@@ -69,6 +72,9 @@ class S2B_NotifyCompressed:
     minimal headers mode and expanded headers mode
     """
 
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
     identifier: bytes
     """an arbitrary identifier for this notification assigned by the subscriber; max 64 bytes
     """
@@ -94,6 +100,7 @@ S2B_Notify = Union[S2B_NotifyUncompressed, S2B_NotifyCompressed]
 
 _headers: Collection[str] = (
     "authorization",
+    "x-tracing",
     "x-identifier",
     "x-topic",
     "x-compressor",
@@ -121,10 +128,15 @@ class S2B_NotifyParser:
 
         headers = parse_simple_headers(flags, payload, _headers)
 
-        authorization_bytes = headers.get("authorization", b"")
-        authorization = (
-            None if authorization_bytes == b"" else authorization_bytes.decode("utf-8")
-        )
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
 
         identifier = headers["x-identifier"]
         if len(identifier) > 64:
@@ -172,6 +184,7 @@ class S2B_NotifyParser:
             return S2B_NotifyUncompressed(
                 type=type,
                 authorization=authorization,
+                tracing=tracing,
                 identifier=identifier,
                 compressor_id=None,
                 topic=topic,
@@ -182,6 +195,7 @@ class S2B_NotifyParser:
         return S2B_NotifyCompressed(
             type=type,
             authorization=authorization,
+            tracing=tracing,
             identifier=identifier,
             compressor_id=compressor_id,
             topic=topic,

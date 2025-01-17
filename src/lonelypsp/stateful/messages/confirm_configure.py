@@ -33,8 +33,11 @@ class B2S_ConfirmConfigure:
     empty strings are converted to None for consistency with http endpoints
     """
 
+    tracing: bytes
+    """the tracing data, which may be empty"""
 
-_headers: Collection[str] = ("x-broadcaster-nonce", "authorization")
+
+_headers: Collection[str] = ("x-broadcaster-nonce", "authorization", "x-tracing")
 
 
 class B2S_ConfirmConfigureParser:
@@ -66,10 +69,13 @@ class B2S_ConfirmConfigureParser:
             except UnicodeDecodeError:
                 raise ValueError("authorization must be a utf-8 string")
 
+        tracing: bytes = headers["x-tracing"]
+
         return B2S_ConfirmConfigure(
             type=type,
             broadcaster_nonce=broadcaster_nonce,
             authorization=authorization,
+            tracing=tracing,
         )
 
 
@@ -87,6 +93,7 @@ def serialize_b2s_confirm_configure(
         header_values=(
             msg.broadcaster_nonce,
             msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+            msg.tracing,
         ),
         payload=b"",
         minimal_headers=minimal_headers,

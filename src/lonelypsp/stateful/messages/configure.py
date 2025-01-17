@@ -50,13 +50,17 @@ class S2B_Configure:
     empty strings are converted to None for consistency with http endpoints
     """
 
+    tracing: bytes
+    """the tracing data for the message, which may be empty"""
+
 
 _headers: Collection[str] = (
     "x-subscriber-nonce",
     "x-enable-zstd",
     "x-enable-training",
     "x-initial-dict",
-    "x-authorization",
+    "authorization",
+    "x-tracing",
 )
 
 
@@ -92,13 +96,15 @@ class S2B_ConfigureParser:
         if initial_dict < 0:
             raise ValueError("x-initial-dict must be non-negative")
 
-        authorization_bytes = headers["x-authorization"]
+        authorization_bytes = headers["authorization"]
         authorization: Optional[str] = None
         if authorization_bytes != b"":
             try:
                 authorization = authorization_bytes.decode("utf-8")
             except UnicodeDecodeError:
-                raise ValueError("x-authorization must be a utf-8 string")
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
 
         return S2B_Configure(
             type=type,
@@ -107,6 +113,7 @@ class S2B_ConfigureParser:
             enable_training=enable_training,
             initial_dict=initial_dict,
             authorization=authorization,
+            tracing=tracing,
         )
 
 
@@ -127,6 +134,7 @@ def serialize_s2b_configure(
             b"\x01" if msg.enable_training else b"\x00",
             msg.initial_dict.to_bytes(2, "big"),
             msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+            msg.tracing,
         ),
         payload=b"",
         minimal_headers=minimal_headers,

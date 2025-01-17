@@ -5,11 +5,18 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     """Assigns a unique integer to each type of message that a subscriber can
     send to a broadcaster over a stateless connection. The prototypical example
     of a stateless connection would be using a distinct HTTP call for each
-    message.
+    message. However, this protocol just requires that there is enough structure
+    to have a fixed set of variable length headers (up to 2^16 bytes per header),
+    a response status code (2 bytes), and a response body (up to 2^64 bytes). If
+    the response status code is not 2xx, the response body has no guarranteed format,
+    otherwise, it's as indicated
 
     Because stateless connections generally already have more parsing helpers available,
     we just provide documentation on how the message should be structured, but don't
     actually provide parsers or serializers.
+
+    This avoids using non-standard http headers to reduce CORS issues, instead
+    embedding e.g. what would naturally be x-tracing into the response
     """
 
     NOTIFY = auto()
@@ -18,13 +25,20 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     ### headers
     - authorization: proof the subscriber is authorized to post to the topic
 
-    ### body
+    ### request body
     - 2 bytes (N): length of the topic, big-endian, unsigned
     - N bytes: the topic. if utf-8 decodable then we will attempt to match glob
       patterns, otherwise, only goes to exact subscriptions
     - 64 bytes: sha-512 hash of the message, will be rechecked
+    - 2 bytes (T): length of the tracing data, big-endian, unsigned
+    - T bytes: the tracing data
+    - 1 bytes (I): length of the identifier, big-endian, unsigned
+    - I bytes: the identifier
     - 8 bytes (M): length of the message, big-endian, unsigned
     - M bytes: the message
+
+    ### response body
+    - `BroadcasterToSubscriberStatelessMessageType.RESPONSE_NOTIFY`
     """
 
     SUBSCRIBE_EXACT = auto()
@@ -35,7 +49,7 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     ### headers
     - authorization: proof the subscriber is authorized to subscribe to the topic
 
-    ### body
+    ### request body
     - 2 bytes (N): length of the url that the subscriber can be reached at, big-endian, unsigned
     - N bytes: the url that the subscriber can be reached at, utf-8 encoded
     - 2 bytes (M): the length of the topic, big-endian, unsigned
@@ -43,6 +57,11 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - 2 bytes (R): either 0, to indicate no missed messages are desired, or the length
       of the url to post missed messages to, big-endian, unsigned
     - R bytes: the url to post missed messages to, utf-8 encoded
+    - 2 bytes (T): length of the tracing data, big-endian, unsigned
+    - T bytes: the tracing data
+
+    ### response body
+    - `BroadcasterToSubscriberStatelessMessageType.RESPONSE_GENERIC`
     """
 
     SUBSCRIBE_GLOB = auto()
@@ -54,7 +73,7 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     ### headers
     - authorization: proof the subscriber is authorized to subscribe to the pattern
 
-    ### body
+    ### request body
     - 2 bytes (N): length of the url that the subscriber can be reached at, big-endian, unsigned
     - N bytes: the url that the subscriber can be reached at, utf-8 encoded
     - 2 bytes (M): the length of the glob pattern, big-endian, unsigned
@@ -62,6 +81,11 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - 2 bytes (R): either 0, to indicate no missed messages are desired, or the length
       of the url to post missed messages to, big-endian, unsigned
     - R bytes: the url to post missed messages to, utf-8 encoded
+    - 2 bytes (T): length of the tracing data, big-endian, unsigned
+    - T bytes: the tracing data
+    
+    ### response body
+    - `BroadcasterToSubscriberStatelessMessageType.RESPONSE_GENERIC`
     """
 
     UNSUBSCRIBE_EXACT = auto()
@@ -71,11 +95,16 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - authorization: proof the subscriber is authorized to unsubscribe from the topic;
       formed exactly like the authorization header in SUBSCRIBE_EXACT
     
-    ### body
+    ### request body
     - 2 bytes (N): length of the url that the subscriber can be reached at, big-endian, unsigned
     - N bytes: the url that the subscriber can be reached at, utf-8 encoded
     - 2 bytes (M): the length of the topic, big-endian, unsigned
     - M bytes: the topic, utf-8 encoded
+    - 2 bytes (T): length of the tracing data, big-endian, unsigned
+    - T bytes: the tracing data
+    
+    ### response body
+    - `BroadcasterToSubscriberStatelessMessageType.RESPONSE_GENERIC`
     """
 
     UNSUBSCRIBE_GLOB = auto()
@@ -86,11 +115,16 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - authorization: proof the subscriber is authorized to unsubscribe from the pattern;
       formed exactly like the authorization header in SUBSCRIBE_GLOB
 
-    ### body
+    ### request body
     - 2 bytes (N): length of the url that the subscriber can be reached at, big-endian, unsigned
     - N bytes: the url that the subscriber can be reached at, utf-8 encoded
     - 2 bytes (M): the length of the glob pattern, big-endian, unsigned
     - M bytes: the glob pattern, utf-8 encoded
+    - 2 bytes (T): length of the tracing data, big-endian, unsigned
+    - T bytes: the tracing data
+    
+    ### response body
+    - `BroadcasterToSubscriberStatelessMessageType.RESPONSE_GENERIC`
     """
 
     CHECK_SUBSCRIPTIONS = auto()
@@ -117,12 +151,13 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - authorization: proof the subscriber is authorized to check the subscriptions for the url
 
     ### request body
+    - 2 bytes (T): length of the tracing data, big-endian, unsigned
+    - T bytes: the tracing data
     - 2 bytes (N): length of the subscriber url to check, big-endian, unsigned
     - N bytes: the url to check, utf-8 encoded
 
     ### response body
-    - 1 byte (reserved for etag format): 0
-    - 64 bytes: the etag
+    -  `BroadcasterToSubscriberStatelessMessageType.RESPONSE_CHECK_SUBSCRIPTIONS`
     """
 
     SET_SUBSCRIPTIONS = auto()
@@ -170,39 +205,35 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
       - R bytes: the recovery url, utf-8 encoded
 
     ### response body
-    empty
+    - `BroadcasterToSubscriberStatelessMessageType.RESPONSE_GENERIC`
     """
 
+    RESPONSE_CONFIRM_RECEIVE = auto()
+    """The subscriber is confirming that it received a message from a broadcaster
+    over a stateless connection. This primarily provides tracing data back to
+    the broadcaster
 
-class SubscriberToBroadcasterStatelessResponseType(IntEnum):
-    """When the broadcaster reaches out to a subscriber they have the opportunity
-    to respond with one of these types of messages, without headers
+    ### response body
+    - 2 bytes (type): int(RESPONSE_CONFIRM_RECEIVE), big endian, unsigned
+    - 2 bytes (A): length of authorization, big-endian, unsigned
+    - A bytes: authorization, utf-8 encoded
+    - 2 bytes (T): length of tracing data, big-endian, unsigned
+    - T bytes: tracing data
+    - 1 byte (I): length of the identifier, big-endian, unsigned
+    - I bytes: the identifier
+    - 4 bytes (N): the number of subscribers, big-endian, unsigned. usually
+      1 but can be more if this subscriber forwarded the message to others
     """
 
-    UNKNOWN = auto()
-    """Used when no specific meaning was understood about the response"""
+    RESPONSE_UNSUBSCRIBE_IMMEDIATE = auto()
+    """If the broadcaster reaches out to a subscriber, the subscriber can respond in
+    the same connection that it wants to unsubscribe without authorization. This
+    does mean that when using a non-verifying protocol (e.g., plain http), a
+    middleman can unsubscribe the subscriber from the broadcaster, but it also
+    allows for recovery in a much broader set of scenarios.
 
-    UNSUBSCRIBE_IMMEDIATE = auto()
-    """When sent in response to a RECEIVE message with a 4xx status code, removes
-    whatever subscription caused the subscriber to receive the message
-
-    The body is a json object with at least the following keys:
-    - `unsubscribe`: the value `true`
-
-    All other values are ignored, however, a common one worth mentioning is:
-    - `reason`: a human-readable string indicating if the subscriber didn't
-      like the format of the message vs just wasn't expecting a message on that
-      topic vs was expecting the message but no longer wants more
-    """
-
-    MULTIPLE_SUBSCRIBERS = auto()
-    """When sent in response to a RECEIVE message with a 2xx status code, indicates
-    that this should be counted as a successful delivery to multiple
-    subscribers.
-
-    The body is a json object with at least the following keys
-    - `subscribers`: the number of subscribers that should be counted as
-      (a non-negative integer)
+    ### response body
+    - 2 bytes (type): int(RESPONSE_UNSUBSCRIBE_IMMEDIATE), big endian, unsigned
     """
 
 
@@ -221,10 +252,21 @@ class BroadcasterToSubscriberStatelessMessageType(IntEnum):
     - repr-digest: contains <digest-algorithm>=<digest>[,<digest-algorithm>=<digest>...]
       where at least one of the digest algorithms is `sha512` and the digest is the
       the base64 encoded sha-512 hash of the message
-    - x-topic: the topic the message was posted to
 
-    ### body
-    the message that was posted to the topic
+    ### request body
+    - 2 bytes (T): length of the tracing data, big-endian, unsigned
+    - T bytes: the tracing data
+    - 2 bytes (N): length of the topic, big-endian, unsigned
+    - N bytes: the topic
+    - 1 byte (I): length of the identifier, big-endian, unsigned
+    - I bytes: the identifier
+    - 8 bytes (M): length of the message, big-endian, unsigned
+    - M bytes: the message
+
+    ### response body
+    any of:
+    - `SubscriberToBroadcasterStatelessMessageType.RESPONSE_CONFIRM_RECEIVE`
+    - `SubscriberToBroadcasterStatelessMessageType.RESPONSE_UNSUBSCRIBE_IMMEDIATE`
     """
 
     MISSED = auto()
@@ -239,4 +281,42 @@ class BroadcasterToSubscriberStatelessMessageType(IntEnum):
 
     ### body
     none
+    """
+
+    RESPONSE_GENERIC = auto()
+    """
+    The generic response from the broadcaster when no special data is required
+
+    - 2 bytes (type): int(RESPONSE_GENERIC), big endian, unsigned
+    - 2 bytes (A): big-endian, unsigned, the length of the authorization
+    - A bytes: the authorization
+    - 2 bytes (T): big-endian, unsigned, the length of tracing data
+    - T bytes: the tracing data
+    """
+
+    RESPONSE_NOTIFY = auto()
+    """
+    The response the broadcaster sends to a subscriber after receiving a NOTIFY
+    
+    - 2 bytes (type): int(RESPONSE_NOTIFY), big endian, unsigned
+    - 2 bytes (A): big-endian, unsigned, the length of the authorization. broadcaster
+      side authorization is always used because hmac over http is supported
+    - A bytes: the authorization
+    - 2 bytes (T): big-endian, unsigned, the length of tracing data
+    - T bytes: the tracing data
+    - 2 bytes: big-endian, unsigned, the number of subscribers notified
+    - 1 byte (I): length of the identifier, big-endian, unsigned
+    - I bytes: the identifier
+    """
+
+    RESPONSE_CHECK_SUBSCRIPTIONS = auto()
+    """The response the broadcaster sends to a subscriber after receiving a CHECK_SUBSCRIPTIONS
+
+    - 2 bytes (type): int(RESPONSE_CHECK_SUBSCRIPTIONS), big endian, unsigned
+    - 2 bytes (A): big-endian, unsigned, the length of the authorization
+    - A bytes: the authorization
+    - 2 bytes (T): big-endian, unsigned, the length of tracing data
+    - T bytes: the tracing data
+    - 1 byte (reserved for etag format): 0
+    - 64 bytes: the etag
     """

@@ -4,9 +4,10 @@ Lonely Pub-Sub Protocol (lonely being the opposite of connected!)
 
 ## PROJECT STAGE - PRE ALPHA
 
-This project is in the development stage 2 - pre-alpha. This means the core functionality is
-available, but completely untested, and more functionality is expected to be added before it
-reaches the alpha stage.
+This project is in the development stage 2 - pre-alpha. There is some testing in
+the [`lonelypst`](https://github.com/Tjstretchalot/lonelypst) repository, but
+there are constant sweeping changes that break the api still ongoing to
+facilitate all the desired functionality
 
 ## Overview
 
@@ -65,3 +66,15 @@ message = serialize_s2b_subscribe_exact(
 )
 # message: bytearray(b'\x00\x01\x00\x02\x00\x00\x00\x07foo/bar')
 ```
+
+## Tracing
+
+To facilitate all types of tracing requirements (logging, metrics, debugging, etc),
+this protocol supports a tracing header which can be passed along with every message.
+The details of how this tracing header is used are up to the broadcaster and subscriber
+implementation, but typically the subscriber will send timestamps/ids that are then
+stored by the broadcaster, while the broadcaster sends back its own timestamps/ids
+for logging on the subscriber side
+
+Tracing data is required to be less than 2^16 bytes and is included in the authorization
+checks where relevant (e.g., hmac)

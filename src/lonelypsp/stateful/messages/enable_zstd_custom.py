@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
+from typing import TYPE_CHECKING, Collection, List, Literal, Optional, Type, Union
 
 from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (
@@ -52,12 +52,27 @@ class B2S_EnableZstdCustom:
     with this identifier
     """
 
+    authorization: Optional[str]
+    """the authorization header that shows this was sent by the broadcaster
+
+    empty strings are converted to None for consistency with http endpoints
+    """
+
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
+    sha512: bytes
+    """the sha512 hash of the dictionary, for authorization"""
+
 
 _headers: Collection[str] = (
     "x-identifier",
     "x-compression-level",
     "x-min-size",
     "x-max-size",
+    "authorization",
+    "x-tracing",
+    "x-sha512",
 )
 
 
@@ -104,6 +119,19 @@ class B2S_EnableZstdCustomParser:
 
         dictionary = payload.read(-1)
 
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
+        sha512 = headers["x-sha512"]
+        if len(sha512) != 64:
+            raise ValueError("sha512 must be 64 bytes")
+
         return B2S_EnableZstdCustom(
             type=type,
             identifier=identifier,
@@ -111,6 +139,9 @@ class B2S_EnableZstdCustomParser:
             min_size=min_size,
             max_size=max_size,
             dictionary=dictionary,
+            authorization=authorization,
+            tracing=tracing,
+            sha512=sha512,
         )
 
 
@@ -130,6 +161,9 @@ def serialize_b2s_enable_zstd_custom(
             msg.compression_level.to_bytes(2, "big", signed=True),
             int_to_minimal_unsigned(msg.min_size),
             int_to_minimal_unsigned(msg.max_size),
+            msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+            msg.tracing,
+            msg.sha512,
         ),
         payload=msg.dictionary,
         minimal_headers=minimal_headers,

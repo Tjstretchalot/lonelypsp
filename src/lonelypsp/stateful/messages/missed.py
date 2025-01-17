@@ -31,12 +31,16 @@ class B2S_Missed:
     minimal headers mode and expanded headers mode
     """
 
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
     topic: bytes
     """the topic the possibly missed message was sent to"""
 
 
 _headers: Collection[str] = (
     "authorization",
+    "x-tracing",
     "x-topic",
 )
 
@@ -59,16 +63,21 @@ class B2S_MissedParser:
 
         headers = parse_simple_headers(flags, payload, _headers)
 
-        authorization_bytes = headers.get("authorization", b"")
-        authorization = (
-            None if authorization_bytes == b"" else authorization_bytes.decode("utf-8")
-        )
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
 
+        tracing = headers["x-tracing"]
         topic = headers["x-topic"]
 
         return B2S_Missed(
             type=type,
             authorization=authorization,
+            tracing=tracing,
             topic=topic,
         )
 
@@ -86,6 +95,7 @@ def serialize_b2s_missed(
         header_names=_headers,
         header_values=(
             msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+            msg.tracing,
             msg.topic,
         ),
         payload=b"",

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
+from typing import TYPE_CHECKING, Collection, List, Literal, Optional, Type, Union
 
 from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (
@@ -27,8 +27,18 @@ class B2S_ConfirmUnsubscribeExact:
     topic: bytes
     """the topic the subscriber is no longer subscribed to"""
 
+    authorization: Optional[str]
+    """the authorization header that shows the confirmation was sent by the broadcaster
+    that was contacted
+    
+    empty strings are converted to None for consistency with http endpoints
+    """
 
-_exact_headers: Collection[str] = ("x-topic",)
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
+
+_exact_headers: Collection[str] = ("x-topic", "authorization", "x-tracing")
 
 
 class B2S_ConfirmUnsubscribeExactParser:
@@ -51,9 +61,21 @@ class B2S_ConfirmUnsubscribeExactParser:
 
         headers = parse_simple_headers(flags, payload, _exact_headers)
         topic = headers["x-topic"]
+
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
         return B2S_ConfirmUnsubscribeExact(
             type=type,
             topic=topic,
+            authorization=authorization,
+            tracing=tracing,
         )
 
 
@@ -70,7 +92,11 @@ def serialize_b2s_confirm_unsubscribe_exact(
     return serialize_simple_message(
         type=msg.type,
         header_names=_exact_headers,
-        header_values=(msg.topic,),
+        header_values=(
+            msg.topic,
+            msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+            msg.tracing,
+        ),
         minimal_headers=minimal_headers,
         payload=b"",
     )
@@ -95,8 +121,18 @@ class B2S_ConfirmUnsubscribeGlob:
     glob: str
     """the glob pattern the subscriber is no longer subscribed to"""
 
+    authorization: Optional[str]
+    """the authorization header that shows the confirmation was sent by the broadcaster
+    that was contacted
+    
+    empty strings are converted to None for consistency with http endpoints
+    """
 
-_glob_headers: Collection[str] = ("x-glob",)
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
+
+_glob_headers: Collection[str] = ("x-glob", "authorization", "x-tracing")
 
 
 class B2S_ConfirmUnsubscribeGlobParser:
@@ -119,9 +155,21 @@ class B2S_ConfirmUnsubscribeGlobParser:
 
         headers = parse_simple_headers(flags, payload, _glob_headers)
         glob = headers["x-glob"].decode("utf-8")
+
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
         return B2S_ConfirmUnsubscribeGlob(
             type=type,
             glob=glob,
+            authorization=authorization,
+            tracing=tracing,
         )
 
 
@@ -138,7 +186,11 @@ def serialize_b2s_confirm_unsubscribe_glob(
     return serialize_simple_message(
         type=msg.type,
         header_names=_glob_headers,
-        header_values=(msg.glob.encode("utf-8"),),
+        header_values=(
+            msg.glob.encode("utf-8"),
+            msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+            msg.tracing,
+        ),
         minimal_headers=minimal_headers,
         payload=b"",
     )

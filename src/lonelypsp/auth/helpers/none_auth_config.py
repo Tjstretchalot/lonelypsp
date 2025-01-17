@@ -1,15 +1,18 @@
-from typing import TYPE_CHECKING, Literal, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type
 
+from lonelypsp.auth.config import (
+    AuthResult,
+    ToBroadcasterAuthConfig,
+    ToSubscriberAuthConfig,
+)
 from lonelypsp.auth.set_subscriptions_info import SetSubscriptionsInfo
 from lonelypsp.stateful.messages.configure import S2B_Configure
 from lonelypsp.stateful.messages.confirm_configure import B2S_ConfirmConfigure
+from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceive
+from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustom
+from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustom
+from lonelypsp.stateful.messages.enable_zstd_preset import B2S_EnableZstdPreset
 from lonelypsp.stateless.make_strong_etag import StrongEtag
-
-if TYPE_CHECKING:
-    from lonelypsp.auth.config import (
-        ToBroadcasterAuthConfig,
-        ToSubscriberAuthConfig,
-    )
 
 
 class ToBroadcasterNoneAuth:
@@ -24,7 +27,14 @@ class ToBroadcasterNoneAuth:
     async def teardown_to_broadcaster_auth(self) -> None: ...
 
     async def authorize_subscribe_exact(
-        self, /, *, url: str, recovery: Optional[str], exact: bytes, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        exact: bytes,
+        now: float,
     ) -> Optional[str]:
         return None
 
@@ -32,16 +42,24 @@ class ToBroadcasterNoneAuth:
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         recovery: Optional[str],
         exact: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
-        return "ok"
+    ) -> AuthResult:
+        return AuthResult.OK
 
     async def authorize_subscribe_glob(
-        self, /, *, url: str, recovery: Optional[str], glob: str, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        glob: str,
+        now: float,
     ) -> Optional[str]:
         return None
 
@@ -49,16 +67,24 @@ class ToBroadcasterNoneAuth:
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         recovery: Optional[str],
         glob: str,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
-        return "ok"
+    ) -> AuthResult:
+        return AuthResult.OK
 
     async def authorize_notify(
-        self, /, *, topic: bytes, message_sha512: bytes, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        topic: bytes,
+        identifier: bytes,
+        message_sha512: bytes,
+        now: float,
     ) -> Optional[str]:
         return None
 
@@ -66,17 +92,20 @@ class ToBroadcasterNoneAuth:
         self,
         /,
         *,
+        tracing: bytes,
         topic: bytes,
+        identifier: bytes,
         message_sha512: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
-        return "ok"
+    ) -> AuthResult:
+        return AuthResult.OK
 
     async def authorize_stateful_configure(
         self,
         /,
         *,
+        tracing: bytes,
         subscriber_nonce: bytes,
         enable_zstd: bool,
         enable_training: bool,
@@ -86,21 +115,21 @@ class ToBroadcasterNoneAuth:
 
     async def is_stateful_configure_allowed(
         self, /, *, message: S2B_Configure, now: float
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
-        return "ok"
+    ) -> AuthResult:
+        return AuthResult.OK
 
     async def authorize_check_subscriptions(
-        self, /, *, url: str, now: float
+        self, /, *, tracing: bytes, url: str, now: float
     ) -> Optional[str]:
         return None
 
     async def is_check_subscriptions_allowed(
-        self, /, *, url: str, now: float, authorization: Optional[str]
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
-        return "ok"
+        self, /, *, tracing: bytes, url: str, now: float, authorization: Optional[str]
+    ) -> AuthResult:
+        return AuthResult.OK
 
     async def authorize_set_subscriptions(
-        self, /, *, url: str, strong_etag: StrongEtag, now: float
+        self, /, *, tracing: bytes, url: str, strong_etag: StrongEtag, now: float
     ) -> Optional[str]:
         return None
 
@@ -108,13 +137,56 @@ class ToBroadcasterNoneAuth:
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         strong_etag: StrongEtag,
         subscriptions: SetSubscriptionsInfo,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
-        return "ok"
+    ) -> AuthResult:
+        return AuthResult.OK
+
+    async def authorize_stateful_continue_receive(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        part_id: int,
+        url: str,
+        now: float,
+    ) -> Optional[str]:
+        return None
+
+    async def is_stateful_continue_receive_allowed(
+        self, /, *, url: str, message: S2B_ContinueReceive, now: float
+    ) -> AuthResult:
+        return AuthResult.OK
+
+    async def authorize_confirm_receive(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        num_subscribers: int,
+        url: str,
+        now: float,
+    ) -> Optional[str]:
+        return None
+
+    async def is_confirm_receive_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        num_subscribers: int,
+        url: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        return AuthResult.OK
 
 
 class ToSubscriberNoneAuth:
@@ -128,7 +200,15 @@ class ToSubscriberNoneAuth:
     async def teardown_to_subscriber_auth(self) -> None: ...
 
     async def authorize_receive(
-        self, /, *, url: str, topic: bytes, message_sha512: bytes, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        topic: bytes,
+        message_sha512: bytes,
+        identifier: bytes,
+        now: float,
     ) -> Optional[str]:
         return None
 
@@ -136,16 +216,18 @@ class ToSubscriberNoneAuth:
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         topic: bytes,
         message_sha512: bytes,
+        identifier: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
-        return "ok"
+    ) -> AuthResult:
+        return AuthResult.OK
 
     async def authorize_missed(
-        self, /, *, recovery: str, topic: bytes, now: float
+        self, /, *, tracing: bytes, recovery: str, topic: bytes, now: float
     ) -> Optional[str]:
         return None
 
@@ -153,12 +235,90 @@ class ToSubscriberNoneAuth:
         self,
         /,
         *,
+        tracing: bytes,
         recovery: str,
         topic: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
-        return "ok"
+    ) -> AuthResult:
+        return AuthResult.OK
+
+    async def authorize_confirm_subscribe_exact(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        exact: bytes,
+        now: float,
+    ) -> Optional[str]:
+        return None
+
+    async def is_confirm_subscribe_exact_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        exact: bytes,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        return AuthResult.OK
+
+    async def authorize_confirm_subscribe_glob(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        glob: str,
+        now: float,
+    ) -> Optional[str]:
+        return None
+
+    async def is_confirm_subscribe_glob_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        glob: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        return AuthResult.OK
+
+    async def authorize_confirm_notify(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        subscribers: int,
+        topic: bytes,
+        message_sha512: bytes,
+        now: float,
+    ) -> Optional[str]:
+        return None
+
+    async def is_confirm_notify_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        subscribers: int,
+        topic: bytes,
+        message_sha512: bytes,
+        authorization: Optional[str],
+        now: float,
+    ) -> AuthResult:
+        return AuthResult.OK
 
     async def authorize_stateful_confirm_configure(
         self, /, *, broadcaster_nonce: bytes, now: float
@@ -167,8 +327,58 @@ class ToSubscriberNoneAuth:
 
     async def is_stateful_confirm_configure_allowed(
         self, /, *, message: B2S_ConfirmConfigure, now: float
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
-        return "ok"
+    ) -> AuthResult:
+        return AuthResult.OK
+
+    async def authorize_stateful_enable_zstd_preset(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        compressor_identifier: int,
+        compression_level: int,
+        min_size: int,
+        max_size: int,
+        authorization: Optional[str],
+        now: float,
+    ) -> Optional[str]:
+        return None
+
+    async def is_stateful_enable_zstd_preset_allowed(
+        self, /, *, url: str, message: B2S_EnableZstdPreset, now: float
+    ) -> AuthResult:
+        return AuthResult.OK
+
+    async def authorize_stateful_enable_zstd_custom(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        compressor_identifier: int,
+        compression_level: int,
+        min_size: int,
+        max_size: int,
+        sha512: bytes,
+        now: float,
+    ) -> Optional[str]:
+        return None
+
+    async def is_stateful_enable_zstd_custom_allowed(
+        self, /, *, url: str, message: B2S_EnableZstdCustom, now: float
+    ) -> AuthResult:
+        return AuthResult.OK
+
+    async def authorize_stateful_disable_zstd_custom(
+        self, /, *, tracing: bytes, compressor_identifier: int, url: str, now: float
+    ) -> Optional[str]:
+        return None
+
+    async def is_stateful_disable_zstd_custom_allowed(
+        self, /, *, url: str, message: B2S_DisableZstdCustom, now: float
+    ) -> AuthResult:
+        return AuthResult.OK
 
 
 if TYPE_CHECKING:

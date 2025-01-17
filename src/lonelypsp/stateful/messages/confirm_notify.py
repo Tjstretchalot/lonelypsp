@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
+from typing import TYPE_CHECKING, Collection, List, Literal, Optional, Type, Union
 
 from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (
@@ -32,8 +32,23 @@ class B2S_ConfirmNotify:
     subscribers: int
     """how many subscribers were successfully notified"""
 
+    authorization: Optional[str]
+    """the authorization header that shows the confirmation was sent by the broadcaster
+    that was contacted
+    
+    empty strings are converted to None for consistency with http endpoints
+    """
 
-_headers: Collection[str] = ("x-identifier", "x-subscribers")
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
+
+_headers: Collection[str] = (
+    "x-identifier",
+    "x-subscribers",
+    "authorization",
+    "x-tracing",
+)
 
 
 class B2S_ConfirmNotifyParser:
@@ -63,10 +78,22 @@ class B2S_ConfirmNotifyParser:
 
         subscribers = int.from_bytes(subscriber_bytes, "big")
 
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
+
         return B2S_ConfirmNotify(
             type=type,
             identifier=identifier,
             subscribers=subscribers,
+            authorization=authorization,
+            tracing=tracing,
         )
 
 
@@ -84,6 +111,8 @@ def serialize_b2s_confirm_notify(
         header_values=(
             msg.identifier,
             int_to_minimal_unsigned(msg.subscribers),
+            msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+            msg.tracing,
         ),
         payload=b"",
         minimal_headers=minimal_headers,

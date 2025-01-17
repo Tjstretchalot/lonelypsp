@@ -48,6 +48,9 @@ class S2B_NotifyStreamStartUncompressed:
     minimal headers mode and expanded headers mode
     """
 
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
     identifier: bytes
     """an arbitrary identifier for this notification assigned by the subscriber; max 64 bytes
     """
@@ -93,6 +96,9 @@ class S2B_NotifyStreamStartCompressed:
     an empty string is reinterpreted as None for consistency between
     minimal headers mode and expanded headers mode
     """
+
+    tracing: bytes
+    """the tracing data, which may be empty"""
 
     identifier: bytes
     """an arbitrary identifier for this notification assigned by the subscriber; max 64 bytes
@@ -143,6 +149,9 @@ class S2B_NotifyStreamContinuation:
     minimal headers mode and expanded headers mode
     """
 
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
     identifier: bytes
     """an arbitrary identifier for this notification assigned by the subscriber; max 64 bytes
     """
@@ -162,6 +171,7 @@ S2B_NotifyStream = Union[
 
 _basic_headers: Collection[str] = (
     "authorization",
+    "x-tracing",
     "x-identifier",
     "x-part-id",
 )
@@ -201,6 +211,7 @@ class S2B_NotifyStreamParser:
                 parse_minimal_message_headers(payload)
             ) as parser:
                 headers["authorization"] = next(parser)
+                headers["x-tracing"] = next(parser)
                 headers["x-identifier"] = next(parser)
 
                 part_id_bytes = next(parser)
@@ -217,10 +228,15 @@ class S2B_NotifyStreamParser:
         else:
             headers = parse_expanded_headers(payload)
 
-        authorization_bytes = headers.get("authorization", b"")
-        authorization = (
-            None if authorization_bytes == b"" else authorization_bytes.decode("utf-8")
-        )
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
 
         identifier = headers["x-identifier"]
         if len(identifier) > 64:
@@ -236,6 +252,7 @@ class S2B_NotifyStreamParser:
             return S2B_NotifyStreamContinuation(
                 type=type,
                 authorization=authorization,
+                tracing=tracing,
                 identifier=identifier,
                 part_id=part_id,
                 payload=payload.read(-1),
@@ -273,6 +290,7 @@ class S2B_NotifyStreamParser:
             return S2B_NotifyStreamStartUncompressed(
                 type=type,
                 authorization=authorization,
+                tracing=tracing,
                 identifier=identifier,
                 part_id=None,
                 topic=topic,
@@ -285,6 +303,7 @@ class S2B_NotifyStreamParser:
         return S2B_NotifyStreamStartCompressed(
             type=type,
             authorization=authorization,
+            tracing=tracing,
             identifier=identifier,
             part_id=None,
             topic=topic,
@@ -314,6 +333,7 @@ def serialize_s2b_notify_stream(
             header_names=_basic_headers,
             header_values=(
                 authorization_bytes,
+                msg.tracing,
                 msg.identifier,
                 int_to_minimal_unsigned(msg.part_id),
             ),
@@ -327,6 +347,7 @@ def serialize_s2b_notify_stream(
             header_names=_total_start_headers,
             header_values=(
                 authorization_bytes,
+                msg.tracing,
                 msg.identifier,
                 b"\x00",
                 msg.topic,
@@ -344,6 +365,7 @@ def serialize_s2b_notify_stream(
         header_names=_total_start_headers,
         header_values=(
             authorization_bytes,
+            msg.tracing,
             msg.identifier,
             b"\x00",
             msg.topic,

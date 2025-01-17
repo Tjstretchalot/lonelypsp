@@ -1,6 +1,6 @@
+from enum import IntEnum, auto
 from typing import (
     TYPE_CHECKING,
-    Literal,
     Optional,
     Protocol,
     Type,
@@ -9,7 +9,27 @@ from typing import (
 from lonelypsp.auth.set_subscriptions_info import SetSubscriptionsInfo
 from lonelypsp.stateful.messages.configure import S2B_Configure
 from lonelypsp.stateful.messages.confirm_configure import B2S_ConfirmConfigure
+from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceive
+from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustom
+from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustom
+from lonelypsp.stateful.messages.enable_zstd_preset import B2S_EnableZstdPreset
 from lonelypsp.stateless.make_strong_etag import StrongEtag
+
+
+class AuthResult(IntEnum):
+    """Distinguishes the different possible results of an authorization check"""
+
+    OK = auto()
+    """the request is allowed"""
+
+    UNAUTHORIZED = auto()
+    """the authorization header is required but not provided"""
+
+    FORBIDDEN = auto()
+    """the authorization header is provided but invalid"""
+
+    UNAVAILABLE = auto()
+    """a service is required to check this isn't available"""
 
 
 class ToBroadcasterAuthConfig(Protocol):
@@ -31,12 +51,20 @@ class ToBroadcasterAuthConfig(Protocol):
         """
 
     async def authorize_subscribe_exact(
-        self, /, *, url: str, recovery: Optional[str], exact: bytes, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        exact: bytes,
+        now: float,
     ) -> Optional[str]:
         """Produces the authorization header to send to the broadcaster to subscribe
         the given url to the given topic.
 
         Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
             url (str): the url the subscriber is subscribing to
             recovery (str, None): the url that will receive MISSED messages for this
                 subscription, if any
@@ -51,16 +79,18 @@ class ToBroadcasterAuthConfig(Protocol):
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         recovery: Optional[str],
         exact: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         """Checks the authorization header posted to the broadcaster to
         (un)subscribe a specific url to a specific topic
 
         Args:
+            tracing (bytes): the tracing data from the subscriber, may be empty
             url (str): the url that will receive notifications
             recovery (str, None): the url that will receive MISSED messages for this
                 subscription, if any. Always None for unsubscribes
@@ -68,20 +98,24 @@ class ToBroadcasterAuthConfig(Protocol):
             now (float): the current time in seconds since the epoch, as if from `time.time()`
             authorization (str, None): the authorization header they provided
 
-        Returns:
-            `ok`: if the subscription is allowed
-            `unauthorized`: if the authorization header is required but not provided
-            `forbidden`: if the authorization header is provided but invalid
-            `unavailable`: if a service is required to check this isn't available
+        Returns: AuthResult
         """
 
     async def authorize_subscribe_glob(
-        self, /, *, url: str, recovery: Optional[str], glob: str, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        glob: str,
+        now: float,
     ) -> Optional[str]:
         """Produces the authorization header to send to the broadcaster to subscribe
         the given url to any message sent to a topic which matches the glob.
 
         Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
             url (str): the url the subscriber is subscribing to
             recovery (str, None): the url that will receive MISSED messages for this
                 subscription, if any
@@ -96,16 +130,18 @@ class ToBroadcasterAuthConfig(Protocol):
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         recovery: Optional[str],
         glob: str,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         """Checks the authorization header posted to the broadcaster to
         (un)subscribe a specific url to a specific glob of topics
 
         Args:
+            tracing (bytes): the tracing data from the subscriber, may be empty
             url (str): the url that will receive notifications
             recovery (str, None): the url that will receive MISSED messages for this
                 subscription, if any
@@ -113,22 +149,28 @@ class ToBroadcasterAuthConfig(Protocol):
             now (float): the current time in seconds since the epoch, as if from `time.time()`
             authorization (str, None): the authorization header they provided
 
-        Returns:
-            `ok`: if the subscription is allowed
-            `unauthorized`: if the authorization header is required but not provided
-            `forbidden`: if the authorization header is provided but invalid
-            `unavailable`: if a service is required to check this isn't available
+        Returns: AuthResult
         """
 
     async def authorize_notify(
-        self, /, *, topic: bytes, message_sha512: bytes, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        topic: bytes,
+        identifier: bytes,
+        message_sha512: bytes,
+        now: float,
     ) -> Optional[str]:
         """Produces the authorization header to send to the broadcaster to fanout
         a notification on a specific topic. As the message may be very large, only
         the sha512 of the message is used for authorization.
 
         Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
             topic (bytes): the topic that the message is being sent to
+            identifier (bytes): an arbitrary identifier for this message assigned
+                by the subscriber, max 255 bytes
             message_sha512 (bytes): the sha512 of the message being sent
             now (float): the current time in seconds since the epoch, as if from `time.time()`
 
@@ -140,11 +182,13 @@ class ToBroadcasterAuthConfig(Protocol):
         self,
         /,
         *,
+        tracing: bytes,
         topic: bytes,
+        identifier: bytes,
         message_sha512: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         """Checks the authorization header posted to the broadcaster to fanout a
         notification on a specific topic.
 
@@ -158,22 +202,22 @@ class ToBroadcasterAuthConfig(Protocol):
         point a second check would be redundant.
 
         Args:
+            tracing (bytes): the tracing data from the subscriber, may be empty
             topic (bytes): the topic that the message is being sent to
+            identifier (bytes): an arbitrary identifier for this message assigned
+                by the subscriber, max 255 bytes
             message_sha512 (bytes): the sha512 of the message being sent
             now (float): the current time in seconds since the epoch, as if from `time.time()`
             authorization (str, None): the authorization header they provided
 
-        Returns:
-            `ok`: if the message is allowed
-            `unauthorized`: if the authorization header is required but not provided
-            `forbidden`: if the authorization header is provided but invalid
-            `unavailable`: if a service is required to check this isn't available
+        Returns: AuthResult
         """
 
     async def authorize_stateful_configure(
         self,
         /,
         *,
+        tracing: bytes,
         subscriber_nonce: bytes,
         enable_zstd: bool,
         enable_training: bool,
@@ -183,6 +227,7 @@ class ToBroadcasterAuthConfig(Protocol):
         a stateful connection. This is the first packet in the stateful protocol
 
         Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
             subscriber_nonce (bytes): the 32 random bytes the subscriber is
                 contributing toward the connection nonce
             enable_zstd (bool): whether to enable zstd compression
@@ -195,7 +240,7 @@ class ToBroadcasterAuthConfig(Protocol):
 
     async def is_stateful_configure_allowed(
         self, /, *, message: S2B_Configure, now: float
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         """Checks the authorization header posted to the broadcaster to configure
         a stateful connection with a subscriber.
 
@@ -203,20 +248,17 @@ class ToBroadcasterAuthConfig(Protocol):
             message (S2B_Configure): the configure message they sent
             now (float): the current time in seconds since the epoch, as if from `time.time()`
 
-        Returns:
-            `ok`: if the configure message is allowed
-            `unauthorized`: if the authorization header is required but not provided
-            `forbidden`: if the authorization header is provided but invalid
-            `unavailable`: if a service is required to check this isn't available
+        Returns: AuthResult
         """
 
     async def authorize_check_subscriptions(
-        self, /, *, url: str, now: float
+        self, /, *, tracing: bytes, url: str, now: float
     ) -> Optional[str]:
         """Produces the authorization header sent to the broadcaster to check
         the subscriptions for a specific url.
 
         Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
             url (str): the url the subscriber is checking
             now (float): the current time in seconds since the epoch, as if from `time.time()`
 
@@ -225,25 +267,22 @@ class ToBroadcasterAuthConfig(Protocol):
         """
 
     async def is_check_subscriptions_allowed(
-        self, /, *, url: str, now: float, authorization: Optional[str]
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+        self, /, *, tracing: bytes, url: str, now: float, authorization: Optional[str]
+    ) -> AuthResult:
         """Checks the authorization header posted to the broadcaster to check
         the subscriptions for a specific url.
 
         Args:
+            tracing (bytes): the tracing data from the subscriber, may be empty
             url (str): the url whose subscriptions are being checked
             now (float): the current time in seconds since the epoch, as if from `time.time()`
             authorization (str, None): the authorization header they provided
 
-        Returns:
-            `ok`: if the request is allowed
-            `unauthorized`: if the authorization header is required but not provided
-            `forbidden`: if the authorization header is provided but invalid
-            `unavailable`: if a service is required to check this isn't available
+        Returns: AuthResult
         """
 
     async def authorize_set_subscriptions(
-        self, /, *, url: str, strong_etag: StrongEtag, now: float
+        self, /, *, tracing: bytes, url: str, strong_etag: StrongEtag, now: float
     ) -> Optional[str]:
         """Produces the authorization header sent to the broadcaster to replace
         the subscriptions for a specific url.
@@ -255,6 +294,7 @@ class ToBroadcasterAuthConfig(Protocol):
         be caught by the broadcaster
 
         Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
             url (str): the url the subscriber is setting
             strong_etag (StrongEtag): the strong etag of the subscriptions being set
             now (float): the current time in seconds since the epoch, as if from `time.time()`
@@ -267,12 +307,13 @@ class ToBroadcasterAuthConfig(Protocol):
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         strong_etag: StrongEtag,
         subscriptions: SetSubscriptionsInfo,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         """Checks the authorization header posted to the broadcaster to replace
         the subscriptions for a specific url.
 
@@ -286,6 +327,7 @@ class ToBroadcasterAuthConfig(Protocol):
         WARN: when this function returns, `subscriptions` will no longer be usable
 
         Args:
+            tracing (bytes): the tracing data from the subscriber, may be empty
             url (str): the url whose subscriptions are being set
             strong_etag (StrongEtag): the strong etag that will be verified before
                 actually setting subscriptions, but may not have been verified yet.
@@ -293,11 +335,104 @@ class ToBroadcasterAuthConfig(Protocol):
             now (float): the current time in seconds since the epoch, as if from `time.time()`
             authorization (str, None): the authorization header they provided
 
+        Returns: AuthResult
+        """
+
+    async def authorize_stateful_continue_receive(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        part_id: int,
+        url: str,
+        now: float,
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the broadcaster to acknowledge
+        that the subscriber has finished receiving the given part id of the given arbitrarily
+        identified message and is ready to receive more. This is used on stateful connections
+        which have simultaneous, continuous receive and send capabilities, and is used as a
+        form of backpressure. Note that the broadcaster might send e.g. 3 messages before
+        waiting for the ack on the first one, to keep the connection reasonably saturated
+
+        Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
+            identifier (bytes): the arbitrary identifier of the message being received.
+                this identifier was assigned by the broadcaster on the first `RECEIVE_STREAM`
+            part_id (int): the part id of the message received
+            url (str): websocket:<nonce>:<ctr> which helps detect desyncs
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
         Returns:
-            `ok`: if the request is allowed
-            `unauthorized`: if the authorization header is required but not provided
-            `forbidden`: if the authorization header is provided but invalid
-            `unavailable`: if a service is required to check this isn't available
+            str, None: the authorization header to use, if any
+        """
+
+    async def is_stateful_continue_receive_allowed(
+        self, /, *, url: str, message: S2B_ContinueReceive, now: float
+    ) -> AuthResult:
+        """Checks the authorization header posted to the broadcaster to acknowledge
+        that the subscriber has finished receiving the given part id of the given arbitrarily
+        identified message and is ready to receive more.
+
+        Args:
+            url (str): websocket:<nonce>:<ctr> which helps detect desyncs
+            message (S2B_ContinueReceive): the continue receive message from the subscriber
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns: AuthResult
+        """
+
+    async def authorize_confirm_receive(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        num_subscribers: int,
+        url: str,
+        now: float,
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the broadcaster to confirm
+        that the subscriber has received the entire message with the given identifier.
+
+        Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
+            identifier (bytes): the arbitrary identifier of the message being received.
+                this identifier was assigned by the broadcaster
+            num_subscribers (int): the number of subscribers that received the message
+            url (str): the url the subscriber received the message on; for websockets, this
+                is a unique identifier to this request
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns:
+            str, None: the authorization header to use, if any
+        """
+
+    async def is_confirm_receive_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        num_subscribers: int,
+        url: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        """Checks the authorization header posted to the broadcaster to confirm
+        that the subscriber has received the entire message with the given identifier.
+
+        Args:
+            tracing (bytes): the tracing data from the subscriber, may be empty
+            identifier (bytes): the arbitrary identifier of the message being received.
+                this identifier was assigned by the broadcaster
+            num_subscribers (int): the number of subscribers that received the message
+            url (str): the url the subscriber received the message on; for websockets, this
+                is a unique identifier to this request
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+            authorization (str, None): the authorization header they provided
+
+        Returns: AuthResult
         """
 
 
@@ -319,7 +454,15 @@ class ToSubscriberAuthConfig(Protocol):
         """
 
     async def authorize_receive(
-        self, /, *, url: str, topic: bytes, message_sha512: bytes, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        topic: bytes,
+        message_sha512: bytes,
+        identifier: bytes,
+        now: float,
     ) -> Optional[str]:
         """Produces the authorization header to send to the subscriber a message
         with the given sha512 on the given topic at approximately the given
@@ -340,9 +483,12 @@ class ToSubscriberAuthConfig(Protocol):
         of an issue to coordinate.
 
         Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
             url (str): the url that will receive the notification
             topic (bytes): the topic that the message is being sent to
             message_sha512 (bytes): the sha512 of the message being sent
+            identifier (bytes): the arbitrary identifier of the message being received.
+                this identifier was assigned by the broadcaster
             now (float): the current time in seconds since the epoch, as if from `time.time()`
 
         Returns:
@@ -353,12 +499,14 @@ class ToSubscriberAuthConfig(Protocol):
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         topic: bytes,
         message_sha512: bytes,
+        identifier: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         """Checks the authorization header posted to a subscriber to receive a message
         from a broadcaster on a topic.
 
@@ -370,22 +518,19 @@ class ToSubscriberAuthConfig(Protocol):
         broadcasters.
 
         Args:
-            url (str): the url the broadcaster used to reach us
+            tracing (bytes): the tracing data the broadcaster provided, may be empty
             topic (bytes): the topic the message claims to be on
             message_sha512 (bytes): the sha512 of the message being received
+            identifier (bytes): the arbitrary identifier of the message being received.
+                this identifier was assigned by the broadcaster
             now (float): the current time in seconds since the epoch, as if from `time.time()`
             authorization (str, None): the authorization header they provided
 
-        Returns:
-            `ok`: if the message is allowed
-            `unauthorized`: if the authorization header is required but not provided
-            `forbidden`: if the authorization header is provided but invalid
-            `unavailable`: if a service is required to check this isn't available.
-              the message will be dropped.
+        Returns: AuthResult
         """
 
     async def authorize_missed(
-        self, /, *, recovery: str, topic: bytes, now: float
+        self, /, *, tracing: bytes, recovery: str, topic: bytes, now: float
     ) -> Optional[str]:
         """Produces the authorization header to send to the subscriber to indicate
         that it may have missed a message on the given topic. The message is being sent at
@@ -402,6 +547,7 @@ class ToSubscriberAuthConfig(Protocol):
         stateful documentation in lonelypsp
 
         Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
             recovery (str): the url that will receive the missed message
             topic (bytes): the topic that the message was on
             now (float): the current time in seconds since the epoch, as if from `time.time()`
@@ -414,11 +560,12 @@ class ToSubscriberAuthConfig(Protocol):
         self,
         /,
         *,
+        tracing: bytes,
         recovery: str,
         topic: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         """Checks the authorization header posted to a subscriber via the given
         recovery url to indicate it may have missed a message on the given topic
 
@@ -427,16 +574,170 @@ class ToSubscriberAuthConfig(Protocol):
         broadcasters.
 
         Args:
+            tracing (bytes): the tracing data the broadcaster provided, may be empty
             recovery (str): the url the missed message was sent to
             topic (bytes): the topic the message was on
             now (float): the current time in seconds since the epoch, as if from `time.time()`
             authorization (str, None): the authorization header they provided
 
+        Returns: AuthResult
+        """
+
+    async def authorize_confirm_subscribe_exact(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        exact: bytes,
+        now: float,
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the subscriber to confirm
+        the exact subscription they sent was accepted.
+
+        Args:
+            tracing (bytes): the tracing data to send to the subscriber, may be empty
+            url (str): the url the subscriber is subscribing to
+            recovery (str, None): the url that will receive MISSED messages for this
+                subscription, if any
+            exact (bytes): the exact topic they are subscribing to
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
         Returns:
-            `ok`: if the message is allowed
-            `unauthorized`: if the authorization header is required but not provided
-            `forbidden`: if the authorization header is provided but invalid
-            `unavailable`: if a service is required to check this isn't available
+            str, None: the authorization header to use, if any
+        """
+
+    async def is_confirm_subscribe_exact_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        exact: bytes,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        """Checks the authorization header posted to the subscriber to confirm
+        the exact subscription they sent was accepted.
+
+        Args:
+            tracing (bytes): the tracing data from the broadcaster, may be empty
+            url (str): the url that will receive notifications
+            recovery (str, None): the url that will receive MISSED messages for this
+                subscription, if any
+            exact (bytes): the exact topic they want to receive messages from
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+            authorization (str, None): the authorization header they provided
+
+        Returns: AuthResult
+        """
+
+    async def authorize_confirm_subscribe_glob(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        glob: str,
+        now: float,
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the subscriber to confirm
+        the glob subscription they sent was accepted.
+
+        Args:
+            tracing (bytes): the tracing data to send to the subscriber, may be empty
+            url (str): the url the subscriber is subscribing to
+            recovery (str, None): the url that will receive MISSED messages for this
+                subscription, if any
+            glob (str): the glob pattern they are subscribing to
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns:
+            str, None: the authorization header to use, if any
+        """
+
+    async def is_confirm_subscribe_glob_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        glob: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        """Checks the authorization header posted to the subscriber to confirm
+        the glob subscription they sent was accepted.
+
+        Args:
+            tracing (bytes): the tracing data from the broadcaster, may be empty
+            url (str): the url that will receive notifications
+            recovery (str, None): the url that will receive MISSED messages for this
+                subscription, if any
+            glob (str): a glob for the topics that they want to receive notifications from
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+            authorization (str, None): the authorization header they provided
+
+        Returns: AuthResult
+        """
+
+    async def authorize_confirm_notify(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        subscribers: int,
+        topic: bytes,
+        message_sha512: bytes,
+        now: float,
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the subscriber to confirm
+        the notification they sent was accepted.
+
+        Args:
+            tracing (bytes): the tracing data to send to the subscriber, may be empty
+            identifier (bytes): the arbitrary identifier of the message being received.
+                this identifier was assigned by the subscriber
+            subscribers (int): the number of subscribers that received the message
+            topic (bytes): the topic that the message is being sent to
+            message_sha512 (bytes): the sha512 of the message being sent
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns:
+            str, None: the authorization header to use, if any
+        """
+
+    async def is_confirm_notify_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        subscribers: int,
+        topic: bytes,
+        message_sha512: bytes,
+        authorization: Optional[str],
+        now: float,
+    ) -> AuthResult:
+        """Checks the authorization header posted to the subscriber to confirm
+        the notification they sent was accepted.
+
+        Args:
+            tracing (bytes): the tracing data from the broadcaster, may be empty
+            identifier (bytes): the arbitrary identifier of the message being received.
+                this identifier was assigned by the subscriber
+            subscribers (int): the number of subscribers that received the message
+            topic (bytes): the topic that the message is being sent to
+            message_sha512 (bytes): the sha512 of the message being sent
+            authorization (str, None): the authorization header they provided
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns: AuthResult
         """
 
     async def authorize_stateful_confirm_configure(
@@ -456,7 +757,7 @@ class ToSubscriberAuthConfig(Protocol):
 
     async def is_stateful_confirm_configure_allowed(
         self, /, *, message: B2S_ConfirmConfigure, now: float
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         """Checks the authorization header posted to a subscriber to confirm the
         stateful configure message they sent was accepted.
 
@@ -464,11 +765,127 @@ class ToSubscriberAuthConfig(Protocol):
             message (B2S_ConfirmConfigure): the confirm configure message from the broadcaster
             now (float): the current time in seconds since the epoch, as if from `time.time()`
 
+        Returns: AuthResult
+        """
+
+    async def authorize_stateful_enable_zstd_preset(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        compressor_identifier: int,
+        compression_level: int,
+        min_size: int,
+        max_size: int,
+        authorization: Optional[str],
+        now: float,
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the subscriber to enable
+        zstd compression with the given parameters over a stateful connection.
+
+        Args:
+            tracing (bytes): the tracing data to send to the subscriber, may be empty
+            url (str): the url the subscriber is subscribing to
+            compressor_identifier (int): the identifier of the zstd compressor
+            compression_level (int): the compression level to use
+            min_size (int): the minimum size of messages to compress
+            max_size (int): the maximum size of messages to compress, up to 2^64 - 1
+            authorization (str, None): the authorization header they provided
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
         Returns:
-            `ok`: if the message is allowed
-            `unauthorized`: if the authorization header is required but not provided
-            `forbidden`: if the authorization header is provided but invalid
-            `unavailable`: if a service is required to check this isn't available
+            str, None: the authorization header to use, if any
+        """
+
+    async def is_stateful_enable_zstd_preset_allowed(
+        self, /, *, url: str, message: B2S_EnableZstdPreset, now: float
+    ) -> AuthResult:
+        """Checks the authorization header posted to the subscriber to enable
+        zstd compression with the given parameters over a stateful connection.
+
+        Args:
+            url (str): websocket:<nonce>:<ctr>, unique to this request
+            message (B2S_EnableZstdPreset): the enable zstd preset message from the broadcaster
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns: AuthResult
+        """
+
+    async def authorize_stateful_enable_zstd_custom(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        compressor_identifier: int,
+        compression_level: int,
+        min_size: int,
+        max_size: int,
+        sha512: bytes,
+        now: float,
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the subscriber to enable
+        zstd compression with the given parameters over a stateful connection.
+
+        Args:
+            tracing (bytes): the tracing data to send to the subscriber, may be empty
+            url (str): the url the subscriber is subscribing to
+            compressor_identifier (bytes): the identifier of the zstd compressor
+            compression_level (int): the compression level to use
+            min_size (int): the minimum size of messages to compress
+            max_size (int): the maximum size of messages to compress, up to 2^64 - 1
+            sha512 (bytes): the sha512 of the compressor dictionary, which is used in
+                place of the actual dictionary data for authorization (as the dictionary
+                could be pretty large)
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns:
+            str, None: the authorization header to use, if any
+        """
+
+    async def is_stateful_enable_zstd_custom_allowed(
+        self, /, *, url: str, message: B2S_EnableZstdCustom, now: float
+    ) -> AuthResult:
+        """Checks the authorization header posted to the subscriber to enable
+        zstd compression with the given parameters over a stateful connection.
+
+        Args:
+            url (str): websocket:<nonce>:<ctr>, unique to this request
+            message (B2S_EnableZstdCustom): the enable zstd custom message from the broadcaster
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns: AuthResult
+        """
+
+    async def authorize_stateful_disable_zstd_custom(
+        self, /, *, tracing: bytes, compressor_identifier: int, url: str, now: float
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the subscriber to disable
+        zstd compression previously enabled with the given identifier
+
+        Args:
+            tracing (bytes): the tracing data to send to the subscriber, may be empty
+            compressor_identifier (int): the identifier of the zstd compressor
+            url (str): the url the subscriber is subscribing to
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns:
+            str, None: the authorization header to use, if any
+        """
+
+    async def is_stateful_disable_zstd_custom_allowed(
+        self, /, *, url: str, message: B2S_DisableZstdCustom, now: float
+    ) -> AuthResult:
+        """Checks the authorization header posted to the subscriber to disable
+        zstd compression previously enabled with the given identifier
+
+        Args:
+            url (str): websocket:<nonce>:<ctr>, unique to this request
+            message (B2S_DisableZstdCustom): the disable zstd custom message from the broadcaster
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns: AuthResult
         """
 
 
@@ -495,23 +912,32 @@ class AuthConfigFromParts:
         await self.to_broadcaster.teardown_to_broadcaster_auth()
 
     async def authorize_subscribe_exact(
-        self, /, *, url: str, recovery: Optional[str], exact: bytes, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        exact: bytes,
+        now: float,
     ) -> Optional[str]:
         return await self.to_broadcaster.authorize_subscribe_exact(
-            url=url, recovery=recovery, exact=exact, now=now
+            tracing=tracing, url=url, recovery=recovery, exact=exact, now=now
         )
 
     async def is_subscribe_exact_allowed(
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         recovery: Optional[str],
         exact: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         return await self.to_broadcaster.is_subscribe_exact_allowed(
+            tracing=tracing,
             url=url,
             recovery=recovery,
             exact=exact,
@@ -520,44 +946,72 @@ class AuthConfigFromParts:
         )
 
     async def authorize_subscribe_glob(
-        self, /, *, url: str, recovery: Optional[str], glob: str, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        glob: str,
+        now: float,
     ) -> Optional[str]:
         return await self.to_broadcaster.authorize_subscribe_glob(
-            url=url, recovery=recovery, glob=glob, now=now
+            tracing=tracing, url=url, recovery=recovery, glob=glob, now=now
         )
 
     async def is_subscribe_glob_allowed(
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         recovery: Optional[str],
         glob: str,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         return await self.to_broadcaster.is_subscribe_glob_allowed(
-            url=url, recovery=recovery, glob=glob, now=now, authorization=authorization
+            tracing=tracing,
+            url=url,
+            recovery=recovery,
+            glob=glob,
+            now=now,
+            authorization=authorization,
         )
 
     async def authorize_notify(
-        self, /, *, topic: bytes, message_sha512: bytes, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        topic: bytes,
+        identifier: bytes,
+        message_sha512: bytes,
+        now: float,
     ) -> Optional[str]:
         return await self.to_broadcaster.authorize_notify(
-            topic=topic, message_sha512=message_sha512, now=now
+            tracing=tracing,
+            topic=topic,
+            identifier=identifier,
+            message_sha512=message_sha512,
+            now=now,
         )
 
     async def is_notify_allowed(
         self,
         /,
         *,
+        tracing: bytes,
         topic: bytes,
+        identifier: bytes,
         message_sha512: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         return await self.to_broadcaster.is_notify_allowed(
+            tracing=tracing,
             topic=topic,
+            identifier=identifier,
             message_sha512=message_sha512,
             now=now,
             authorization=authorization,
@@ -567,12 +1021,14 @@ class AuthConfigFromParts:
         self,
         /,
         *,
+        tracing: bytes,
         subscriber_nonce: bytes,
         enable_zstd: bool,
         enable_training: bool,
         initial_dict: int,
     ) -> Optional[str]:
         return await self.to_broadcaster.authorize_stateful_configure(
+            tracing=tracing,
             subscriber_nonce=subscriber_nonce,
             enable_zstd=enable_zstd,
             enable_training=enable_training,
@@ -581,44 +1037,107 @@ class AuthConfigFromParts:
 
     async def is_stateful_configure_allowed(
         self, /, *, message: S2B_Configure, now: float
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         return await self.to_broadcaster.is_stateful_configure_allowed(
             message=message, now=now
         )
 
     async def authorize_check_subscriptions(
-        self, /, *, url: str, now: float
+        self, /, *, tracing: bytes, url: str, now: float
     ) -> Optional[str]:
-        return await self.to_broadcaster.authorize_check_subscriptions(url=url, now=now)
+        return await self.to_broadcaster.authorize_check_subscriptions(
+            tracing=tracing, url=url, now=now
+        )
 
     async def is_check_subscriptions_allowed(
-        self, /, *, url: str, now: float, authorization: Optional[str]
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+        self, /, *, tracing: bytes, url: str, now: float, authorization: Optional[str]
+    ) -> AuthResult:
         return await self.to_broadcaster.is_check_subscriptions_allowed(
-            url=url, now=now, authorization=authorization
+            tracing=tracing, url=url, now=now, authorization=authorization
         )
 
     async def authorize_set_subscriptions(
-        self, /, *, url: str, strong_etag: StrongEtag, now: float
+        self, /, *, tracing: bytes, url: str, strong_etag: StrongEtag, now: float
     ) -> Optional[str]:
         return await self.to_broadcaster.authorize_set_subscriptions(
-            url=url, strong_etag=strong_etag, now=now
+            tracing=tracing, url=url, strong_etag=strong_etag, now=now
         )
 
     async def is_set_subscriptions_allowed(
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         strong_etag: StrongEtag,
         subscriptions: SetSubscriptionsInfo,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         return await self.to_broadcaster.is_set_subscriptions_allowed(
+            tracing=tracing,
             url=url,
             strong_etag=strong_etag,
             subscriptions=subscriptions,
+            now=now,
+            authorization=authorization,
+        )
+
+    async def authorize_stateful_continue_receive(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        part_id: int,
+        url: str,
+        now: float,
+    ) -> Optional[str]:
+        return await self.to_broadcaster.authorize_stateful_continue_receive(
+            tracing=tracing, identifier=identifier, part_id=part_id, url=url, now=now
+        )
+
+    async def is_stateful_continue_receive_allowed(
+        self, /, *, url: str, message: S2B_ContinueReceive, now: float
+    ) -> AuthResult:
+        return await self.to_broadcaster.is_stateful_continue_receive_allowed(
+            url=url, message=message, now=now
+        )
+
+    async def authorize_confirm_receive(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        num_subscribers: int,
+        url: str,
+        now: float,
+    ) -> Optional[str]:
+        return await self.to_broadcaster.authorize_confirm_receive(
+            tracing=tracing,
+            identifier=identifier,
+            num_subscribers=num_subscribers,
+            url=url,
+            now=now,
+        )
+
+    async def is_confirm_receive_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        num_subscribers: int,
+        url: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        return await self.to_broadcaster.is_confirm_receive_allowed(
+            tracing=tracing,
+            identifier=identifier,
+            num_subscribers=num_subscribers,
+            url=url,
             now=now,
             authorization=authorization,
         )
@@ -630,48 +1149,180 @@ class AuthConfigFromParts:
         await self.to_subscriber.teardown_to_subscriber_auth()
 
     async def authorize_receive(
-        self, /, *, url: str, topic: bytes, message_sha512: bytes, now: float
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        topic: bytes,
+        message_sha512: bytes,
+        identifier: bytes,
+        now: float,
     ) -> Optional[str]:
         return await self.to_subscriber.authorize_receive(
-            url=url, topic=topic, message_sha512=message_sha512, now=now
+            tracing=tracing,
+            url=url,
+            topic=topic,
+            message_sha512=message_sha512,
+            identifier=identifier,
+            now=now,
         )
 
     async def is_receive_allowed(
         self,
         /,
         *,
+        tracing: bytes,
         url: str,
         topic: bytes,
         message_sha512: bytes,
+        identifier: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         return await self.to_subscriber.is_receive_allowed(
+            tracing=tracing,
             url=url,
             topic=topic,
             message_sha512=message_sha512,
+            identifier=identifier,
             now=now,
             authorization=authorization,
         )
 
     async def authorize_missed(
-        self, /, *, recovery: str, topic: bytes, now: float
+        self, /, *, tracing: bytes, recovery: str, topic: bytes, now: float
     ) -> Optional[str]:
         return await self.to_subscriber.authorize_missed(
-            recovery=recovery, topic=topic, now=now
+            tracing=tracing, recovery=recovery, topic=topic, now=now
         )
 
     async def is_missed_allowed(
         self,
         /,
         *,
+        tracing: bytes,
         recovery: str,
         topic: bytes,
         now: float,
         authorization: Optional[str],
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         return await self.to_subscriber.is_missed_allowed(
-            recovery=recovery, topic=topic, now=now, authorization=authorization
+            tracing=tracing,
+            recovery=recovery,
+            topic=topic,
+            now=now,
+            authorization=authorization,
+        )
+
+    async def authorize_confirm_subscribe_exact(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        exact: bytes,
+        now: float,
+    ) -> Optional[str]:
+        return await self.to_subscriber.authorize_confirm_subscribe_exact(
+            tracing=tracing, url=url, recovery=recovery, exact=exact, now=now
+        )
+
+    async def is_confirm_subscribe_exact_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        exact: bytes,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        return await self.to_subscriber.is_confirm_subscribe_exact_allowed(
+            tracing=tracing,
+            url=url,
+            recovery=recovery,
+            exact=exact,
+            now=now,
+            authorization=authorization,
+        )
+
+    async def authorize_confirm_subscribe_glob(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        glob: str,
+        now: float,
+    ) -> Optional[str]:
+        return await self.to_subscriber.authorize_confirm_subscribe_glob(
+            tracing=tracing, url=url, recovery=recovery, glob=glob, now=now
+        )
+
+    async def is_confirm_subscribe_glob_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        recovery: Optional[str],
+        glob: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        return await self.to_subscriber.is_confirm_subscribe_glob_allowed(
+            tracing=tracing,
+            url=url,
+            recovery=recovery,
+            glob=glob,
+            now=now,
+            authorization=authorization,
+        )
+
+    async def authorize_confirm_notify(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        subscribers: int,
+        topic: bytes,
+        message_sha512: bytes,
+        now: float,
+    ) -> Optional[str]:
+        return await self.to_subscriber.authorize_confirm_notify(
+            tracing=tracing,
+            identifier=identifier,
+            subscribers=subscribers,
+            topic=topic,
+            message_sha512=message_sha512,
+            now=now,
+        )
+
+    async def is_confirm_notify_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        subscribers: int,
+        topic: bytes,
+        message_sha512: bytes,
+        authorization: Optional[str],
+        now: float,
+    ) -> AuthResult:
+        return await self.to_subscriber.is_confirm_notify_allowed(
+            tracing=tracing,
+            identifier=identifier,
+            subscribers=subscribers,
+            topic=topic,
+            message_sha512=message_sha512,
+            authorization=authorization,
+            now=now,
         )
 
     async def authorize_stateful_confirm_configure(
@@ -683,9 +1334,88 @@ class AuthConfigFromParts:
 
     async def is_stateful_confirm_configure_allowed(
         self, /, *, message: B2S_ConfirmConfigure, now: float
-    ) -> Literal["ok", "unauthorized", "forbidden", "unavailable"]:
+    ) -> AuthResult:
         return await self.to_subscriber.is_stateful_confirm_configure_allowed(
             message=message, now=now
+        )
+
+    async def authorize_stateful_enable_zstd_preset(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        compressor_identifier: int,
+        compression_level: int,
+        min_size: int,
+        max_size: int,
+        authorization: Optional[str],
+        now: float,
+    ) -> Optional[str]:
+        return await self.to_subscriber.authorize_stateful_enable_zstd_preset(
+            tracing=tracing,
+            url=url,
+            compressor_identifier=compressor_identifier,
+            compression_level=compression_level,
+            min_size=min_size,
+            max_size=max_size,
+            authorization=authorization,
+            now=now,
+        )
+
+    async def is_stateful_enable_zstd_preset_allowed(
+        self, /, *, url: str, message: B2S_EnableZstdPreset, now: float
+    ) -> AuthResult:
+        return await self.to_subscriber.is_stateful_enable_zstd_preset_allowed(
+            url=url, message=message, now=now
+        )
+
+    async def authorize_stateful_enable_zstd_custom(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        url: str,
+        compressor_identifier: int,
+        compression_level: int,
+        min_size: int,
+        max_size: int,
+        sha512: bytes,
+        now: float,
+    ) -> Optional[str]:
+        return await self.to_subscriber.authorize_stateful_enable_zstd_custom(
+            tracing=tracing,
+            url=url,
+            compressor_identifier=compressor_identifier,
+            compression_level=compression_level,
+            min_size=min_size,
+            max_size=max_size,
+            sha512=sha512,
+            now=now,
+        )
+
+    async def is_stateful_enable_zstd_custom_allowed(
+        self, /, *, url: str, message: B2S_EnableZstdCustom, now: float
+    ) -> AuthResult:
+        return await self.to_subscriber.is_stateful_enable_zstd_custom_allowed(
+            url=url, message=message, now=now
+        )
+
+    async def authorize_stateful_disable_zstd_custom(
+        self, /, *, tracing: bytes, compressor_identifier: int, url: str, now: float
+    ) -> Optional[str]:
+        return await self.to_subscriber.authorize_stateful_disable_zstd_custom(
+            tracing=tracing,
+            compressor_identifier=compressor_identifier,
+            url=url,
+            now=now,
+        )
+
+    async def is_stateful_disable_zstd_custom_allowed(
+        self, /, *, url: str, message: B2S_DisableZstdCustom, now: float
+    ) -> AuthResult:
+        return await self.to_subscriber.is_stateful_disable_zstd_custom_allowed(
+            url=url, message=message, now=now
         )
 
 

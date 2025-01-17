@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
+from typing import TYPE_CHECKING, Collection, List, Literal, Optional, Type, Union
 
 from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (
@@ -48,12 +48,23 @@ class B2S_EnableZstdPreset:
     for no limit
     """
 
+    authorization: Optional[str]
+    """the authorization header that shows this was sent by the broadcaster
+
+    empty strings are converted to None for consistency with http endpoints
+    """
+
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
 
 _headers: Collection[str] = (
     "x-identifier",
     "x-compression-level",
     "x-min-size",
     "x-max-size",
+    "authorization",
+    "x-tracing",
 )
 
 
@@ -98,12 +109,24 @@ class B2S_EnableZstdPresetParser:
 
         max_size = int.from_bytes(max_size_bytes, "big")
 
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
+
         return B2S_EnableZstdPreset(
             type=type,
             identifier=identifier,
             compression_level=compression_level,
             min_size=min_size,
             max_size=max_size,
+            authorization=authorization,
+            tracing=tracing,
         )
 
 
@@ -123,6 +146,8 @@ def serialize_b2s_enable_zstd_preset(
             msg.compression_level.to_bytes(2, "big", signed=True),
             int_to_minimal_unsigned(msg.min_size),
             int_to_minimal_unsigned(msg.max_size),
+            msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+            msg.tracing,
         ),
         payload=b"",
         minimal_headers=minimal_headers,

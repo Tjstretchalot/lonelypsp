@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
+from typing import TYPE_CHECKING, Collection, List, Literal, Optional, Type, Union
 
 from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (
@@ -28,8 +28,18 @@ class S2B_ConfirmReceive:
     """an arbitrary identifier for the notification assigned by the broadcaster; max 64 bytes
     """
 
+    authorization: Optional[str]
+    """the authorization header that shows the confirmation was sent by the subscriber
+    that was contacted
+    
+    empty strings are converted to None for consistency with http endpoints
+    """
 
-_headers: Collection[str] = ("x-identifier",)
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
+
+_headers: Collection[str] = ("x-identifier", "authorization", "x-tracing")
 
 
 class S2B_ConfirmRecieveParser:
@@ -53,9 +63,21 @@ class S2B_ConfirmRecieveParser:
         if len(identifier) > 64:
             raise ValueError("x-identifier must be at most 64 bytes")
 
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
+
         return S2B_ConfirmReceive(
             type=type,
             identifier=identifier,
+            authorization=authorization,
+            tracing=tracing,
         )
 
 
@@ -70,7 +92,11 @@ def serialize_s2b_confirm_receive(
     return serialize_simple_message(
         type=msg.type,
         header_names=_headers,
-        header_values=(msg.identifier,),
+        header_values=(
+            msg.identifier,
+            msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+            msg.tracing,
+        ),
         payload=b"",
         minimal_headers=minimal_headers,
     )

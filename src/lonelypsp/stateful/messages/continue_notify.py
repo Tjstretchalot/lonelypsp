@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Collection, List, Literal, Type, Union
+from typing import TYPE_CHECKING, Collection, List, Literal, Optional, Type, Union
 
 from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.constants import (
@@ -32,8 +32,18 @@ class B2S_ContinueNotify:
     part_id: int
     """the part id the broadcaster received; they are expecting the next part after this"""
 
+    authorization: Optional[str]
+    """the authorization header that shows the confirmation was sent by the broadcaster
+    that was contacted
 
-_headers: Collection[str] = ("x-identifier", "x-part-id")
+    empty strings are converted to None for consistency with http endpoints
+    """
+
+    tracing: bytes
+    """the tracing data, which may be empty"""
+
+
+_headers: Collection[str] = ("x-identifier", "x-part-id", "authorization", "x-tracing")
 
 
 class B2S_ContinueNotifyParser:
@@ -63,10 +73,22 @@ class B2S_ContinueNotifyParser:
 
         part_id = int.from_bytes(part_id_bytes, "big")
 
+        authorization_bytes = headers["authorization"]
+        authorization: Optional[str] = None
+        if authorization_bytes != b"":
+            try:
+                authorization = authorization_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                raise ValueError("authorization must be a utf-8 string")
+
+        tracing = headers["x-tracing"]
+
         return B2S_ContinueNotify(
             type=type,
             identifier=identifier,
             part_id=part_id,
+            authorization=authorization,
+            tracing=tracing,
         )
 
 
@@ -81,7 +103,12 @@ def serialize_b2s_continue_notify(
     return serialize_simple_message(
         type=msg.type,
         header_names=_headers,
-        header_values=(msg.identifier, int_to_minimal_unsigned(msg.part_id)),
+        header_values=(
+            msg.identifier,
+            int_to_minimal_unsigned(msg.part_id),
+            msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
+            msg.tracing,
+        ),
         payload=b"",
         minimal_headers=minimal_headers,
     )
