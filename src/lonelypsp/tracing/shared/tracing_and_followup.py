@@ -1,4 +1,5 @@
-from typing import Generic, Protocol, TypeVar
+from typing import Generic, TypeVar
+
 from lonelypsp.compat import fast_dataclass
 
 T = TypeVar("T")

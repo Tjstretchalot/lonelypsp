@@ -5,8 +5,7 @@ from lonelypsp.tracing.stateless.root import (
     StatelessTracingSubscriberRoot,
 )
 
-
-InitializerT = TypeVar("InitializerT")
+InitializerTcontra = TypeVar("InitializerTcontra", contravariant=True)
 """When using OpenTelemetry style spans, the type that allows the caller to
 embed the span within some other operation. We never pass this in a keyword
 argument (and enforce this with the protocol) so you can use a better name
@@ -14,7 +13,7 @@ for it
 """
 
 
-class TracingBroadcasterRoot(Generic[InitializerT], Protocol):
+class TracingBroadcasterRoot(Generic[InitializerTcontra], Protocol):
     """
     Can produce stateless or stateful roots from the broadcaster
     perspective for tracing. To avoid excessive garbage collection
@@ -26,15 +25,15 @@ class TracingBroadcasterRoot(Generic[InitializerT], Protocol):
     """
 
     @property
-    def stateless(self) -> "StatelessTracingBroadcasterRoot[InitializerT]":
+    def stateless(self) -> "StatelessTracingBroadcasterRoot[InitializerTcontra]":
         """Returns the stateless root"""
 
     # @property
-    # def stateful(self) -> "StatefulTracingBroadcasterRoot[InitializerT]":
+    # def stateful(self) -> "StatefulTracingBroadcasterRoot[InitializerTcontra]":
     #     """Produces the stateful root"""
 
 
-class TracingSubscriberRoot(Generic[InitializerT], Protocol):
+class TracingSubscriberRoot(Generic[InitializerTcontra], Protocol):
     """
     Can produce stateless or stateful roots from the subscriber perspective for
     tracing. To avoid excessive garbage collection it is not intended that this
@@ -45,9 +44,9 @@ class TracingSubscriberRoot(Generic[InitializerT], Protocol):
     """
 
     @property
-    def stateless(self) -> "StatelessTracingSubscriberRoot[InitializerT]":
+    def stateless(self) -> "StatelessTracingSubscriberRoot[InitializerTcontra]":
         """Returns the stateless root"""
 
     # @property
-    # def stateful(self) -> "StatefulTracingSubscriberRoot[InitializerT]":
+    # def stateful(self) -> "StatefulTracingSubscriberRoot[InitializerTcontra]":
     #     """Produces the stateful root"""

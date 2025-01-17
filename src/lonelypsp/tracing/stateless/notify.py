@@ -1,5 +1,6 @@
 from types import TracebackType
 from typing import Optional, Protocol, Type
+
 from lonelypsp.auth.config import BadAuthResult
 from lonelypsp.tracing.shared.handle_trusted_notify import HandledTrustedNotify
 from lonelypsp.tracing.shared.tracing_and_followup import TracingAndFollowup

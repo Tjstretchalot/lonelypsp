@@ -1,9 +1,10 @@
-from typing import Generic, Optional, TypeVar, Protocol
+from typing import Generic, Optional, Protocol, TypeVar
 
 from lonelypsp.auth.config import BadAuthResult
 from lonelypsp.tracing.shared.tracing_and_followup import TracingAndFollowup
 
-T = TypeVar("SuccessT")
+T = TypeVar("T")
+T_co = TypeVar("T_co", covariant=True)
 
 
 class HandledTrustedNotify(Generic[T], Protocol):
@@ -68,10 +69,10 @@ class HandledTrustedNotifySendingReceive(Generic[T], Protocol):
         """
 
 
-class HandledTrustedNotifyReceivedResponse(Generic[T], Protocol):
+class HandledTrustedNotifyReceivedResponse(Generic[T_co], Protocol):
     """Runs on the broadcaster"""
 
-    def on_network_error(self) -> "HandledTrustedNotifyHandleMissedStart[T]":
+    def on_network_error(self) -> "HandledTrustedNotifyHandleMissedStart[T_co]":
         """Called if no response was received from the subscriber, meaning either
         they could not be reached, didn't understand the protocol used, they
         experienced an error that prevented them from producing a sensible
@@ -83,7 +84,7 @@ class HandledTrustedNotifyReceivedResponse(Generic[T], Protocol):
 
     def on_response_received(
         self, /, *, status_code: int
-    ) -> "HandleTrustedNotifyResponseAuthResultReady[T]":
+    ) -> "HandleTrustedNotifyResponseAuthResultReady[T_co]":
         """Called if a response was received from the subscriber but before the
         body has been parsed and before the authorization check on that response
         has been performed
@@ -94,8 +95,8 @@ class HandledTrustedNotifyReceivedResponse(Generic[T], Protocol):
         """
 
 
-class HandleTrustedNotifyResponseAuthResultReady(Generic[T], Protocol):
-    def on_bad_response(self) -> "HandledTrustedNotifyHandleMissedStart[T]":
+class HandleTrustedNotifyResponseAuthResultReady(Generic[T_co], Protocol):
+    def on_bad_response(self) -> "HandledTrustedNotifyHandleMissedStart[T_co]":
         """Called if the response was malformed or otherwise invalid, which
         will schedule a `MISSED` message if possible and then move onto the
         next subscriber
@@ -103,7 +104,7 @@ class HandleTrustedNotifyResponseAuthResultReady(Generic[T], Protocol):
 
     def on_unsubscribe_immediate_requested(
         self,
-    ) -> "HandleTrustedNotifyUnsubscribeImmediateDone[T]":
+    ) -> "HandleTrustedNotifyUnsubscribeImmediateDone[T_co]":
         """Called if the subscriber returned the unsubscribe immediate response,
         which does not require authorization and thus cannot/does not include
         tracing data. The unsubscribe will be processed and then the broadcaster
@@ -112,13 +113,13 @@ class HandleTrustedNotifyResponseAuthResultReady(Generic[T], Protocol):
 
     def on_bad_auth_result(
         self, /, *, result: BadAuthResult
-    ) -> "HandledTrustedNotifyHandleMissedStart[T]":
+    ) -> "HandledTrustedNotifyHandleMissedStart[T_co]":
         """Called if the message was correctly formed but the authorization header
         was invalid, which will schedule a `MISSED` message if possible and then
         move onto the next subscriber
         """
 
-    def on_receive_confirmed(self, /, *, tracing: bytes, num_subscribers: int) -> T:
+    def on_receive_confirmed(self, /, *, tracing: bytes, num_subscribers: int) -> T_co:
         """Called if the response was correctly formed and the auth result succeeded.
         This is done in a single pass, so the tracing data is ready to be deserialized.
 
@@ -130,13 +131,13 @@ class HandleTrustedNotifyResponseAuthResultReady(Generic[T], Protocol):
         """
 
 
-class HandleTrustedNotifyUnsubscribeImmediateDone(Generic[T], Protocol):
-    def on_unsubscribe_immediate_success(self) -> T:
+class HandleTrustedNotifyUnsubscribeImmediateDone(Generic[T_co], Protocol):
+    def on_unsubscribe_immediate_success(self) -> T_co:
         """Called when the subscriber has been successfully unsubscribed and
         the broadcaster is ready to move onto the next subscriber
         """
 
-    def on_unsubscribe_immediate_not_found(self) -> T:
+    def on_unsubscribe_immediate_not_found(self) -> T_co:
         """Called if the subscriber had already been removed from the database,
         and the broadcaster is ready to move onto the next subscriber
         """
@@ -147,21 +148,21 @@ class HandleTrustedNotifyUnsubscribeImmediateDone(Generic[T], Protocol):
         """
 
 
-class HandledTrustedNotifyHandleMissedStart(Generic[T], Protocol):
+class HandledTrustedNotifyHandleMissedStart(Generic[T_co], Protocol):
     """Runs on the broadcaster"""
 
-    def on_handle_missed_start(self) -> "HandleTrustedNotifyHandleMissedDone[T]":
+    def on_handle_missed_start(self) -> "HandleTrustedNotifyHandleMissedDone[T_co]":
         """Called when about to try scheduling a `MISSED` message before
         proceeding onto something else
         """
 
 
-class HandleTrustedNotifyHandleMissedDone(Generic[T], Protocol):
+class HandleTrustedNotifyHandleMissedDone(Generic[T_co], Protocol):
     """Runs on the broadcaster"""
 
     def on_handle_missed_skipped(
         self, /, *, recovery: Optional[str], next_retry_at: Optional[float]
-    ) -> T:
+    ) -> T_co:
         """Did not schedule a `MISSED` message because either the subscriber did
         not have a recovery url set or the configuration of the broadcaster indicated
         one should not be sent
@@ -173,7 +174,7 @@ class HandleTrustedNotifyHandleMissedDone(Generic[T], Protocol):
                 messages, the time at which it was scheduled for, otherwise None
         """
 
-    def on_handle_missed_success(self, recovery: str, next_retry_at: float) -> T:
+    def on_handle_missed_success(self, recovery: str, next_retry_at: float) -> T_co:
         """Scheduled a `MISSED` message normally
 
         Args:
@@ -181,7 +182,7 @@ class HandleTrustedNotifyHandleMissedDone(Generic[T], Protocol):
             next_retry_at (float): the time at which the `MISSED` message was scheduled
         """
 
-    def on_handle_missed_unavailable(self, recovery: str, next_retry_at: float) -> T:
+    def on_handle_missed_unavailable(self, recovery: str, next_retry_at: float) -> T_co:
         """Failed to schedule a `MISSED` message due to an internal issue (the
         database was unavailable). Will still proceed as normal as MISSED messages
         are on a best-effort basis and the core database may still be functioning

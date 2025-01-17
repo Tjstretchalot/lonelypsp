@@ -5,7 +5,6 @@ from typing import (
     Optional,
     Protocol,
     Type,
-    Union,
 )
 
 from lonelypsp.auth.set_subscriptions_info import SetSubscriptionsInfo
