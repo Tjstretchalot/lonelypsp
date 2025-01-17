@@ -1,9 +1,11 @@
 from enum import IntEnum, auto
 from typing import (
     TYPE_CHECKING,
+    Literal,
     Optional,
     Protocol,
     Type,
+    Union,
 )
 
 from lonelypsp.auth.set_subscriptions_info import SetSubscriptionsInfo
@@ -30,6 +32,11 @@ class AuthResult(IntEnum):
 
     UNAVAILABLE = auto()
     """a service is required to check this isn't available"""
+
+
+BadAuthResult = Literal[
+    AuthResult.UNAUTHORIZED, AuthResult.FORBIDDEN, AuthResult.UNAVAILABLE
+]
 
 
 class ToBroadcasterAuthConfig(Protocol):
