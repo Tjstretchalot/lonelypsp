@@ -44,6 +44,22 @@ read the generated file.
 
 ### Things Included
 
+(V2)
+
+Notify
+
+There were XXX notifications to X broadcasters, taking XXXms (25% XXXms, 75% XXXms, 99% XXXms) to transmit XXXbytes (25% XXXbytes, 75% XXXbytes, 99% XXXbytes) of meaningful data.
+
+Average trace:
+
+```
+0  ms-XXXms: THING 1  (25% XXXms, 75% XXXms, 99% XXXms) (in 100% of traces)
+XXXms-XXXms: THING 2  (25% XXXms, 75% XXXms, 99% XXXms) (in 75% of traces)
+XXXms-XXXms: THING 3  (25% XXXms, 75% XXXms, 99% XXXms) (in 100% of traces)
+```
+
+(V1)
+
 Mostly a todo list at the moment
 
 - [ ] since...

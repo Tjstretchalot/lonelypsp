@@ -96,7 +96,7 @@ class HandledTrustedNotifyReceivedResponse(Generic[T_co], Protocol):
 
 
 class HandleTrustedNotifyResponseAuthResultReady(Generic[T_co], Protocol):
-    def on_bad_response(self) -> "HandledTrustedNotifyHandleMissedStart[T_co]":
+    def on_bad_receive_response(self) -> "HandledTrustedNotifyHandleMissedStart[T_co]":
         """Called if the response was malformed or otherwise invalid, which
         will schedule a `MISSED` message if possible and then move onto the
         next subscriber
@@ -111,7 +111,7 @@ class HandleTrustedNotifyResponseAuthResultReady(Generic[T_co], Protocol):
         will move onto the next subscriber
         """
 
-    def on_bad_auth_result(
+    def on_bad_receive_auth_result(
         self, /, *, result: BadAuthResult
     ) -> "HandledTrustedNotifyHandleMissedStart[T_co]":
         """Called if the message was correctly formed but the authorization header
