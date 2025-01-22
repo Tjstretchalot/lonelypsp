@@ -321,7 +321,7 @@ class ToSubscriberNoneAuth:
         return AuthResult.OK
 
     async def authorize_stateful_confirm_configure(
-        self, /, *, broadcaster_nonce: bytes, now: float
+        self, /, *, broadcaster_nonce: bytes, tracing: bytes, now: float
     ) -> Optional[str]:
         return None
 

@@ -1466,7 +1466,7 @@ class ToSubscriberHmacAuth:
         )
 
     def _prepare_stateful_confirm_configure(
-        self, /, *, broadcaster_nonce: bytes, timestamp: int, nonce: str
+        self, /, *, broadcaster_nonce: bytes, tracing: bytes, timestamp: int, nonce: str
     ) -> bytes:
         encoded_timestamp = timestamp.to_bytes(8, "big")
         encoded_nonce = nonce.encode("utf-8")
@@ -1477,17 +1477,22 @@ class ToSubscriberHmacAuth:
                 encoded_timestamp,
                 len(encoded_nonce).to_bytes(1, "big"),
                 encoded_nonce,
+                len(tracing).to_bytes(2, "big"),
+                tracing,
                 len(broadcaster_nonce).to_bytes(1, "big"),
                 broadcaster_nonce,
             ]
         )
 
     async def authorize_stateful_confirm_configure(
-        self, /, *, broadcaster_nonce: bytes, now: float
+        self, /, *, broadcaster_nonce: bytes, tracing: bytes, now: float
     ) -> Optional[str]:
         nonce = make_nonce()
         to_sign = self._prepare_stateful_confirm_configure(
-            broadcaster_nonce=broadcaster_nonce, timestamp=int(now), nonce=nonce
+            broadcaster_nonce=broadcaster_nonce,
+            tracing=tracing,
+            timestamp=int(now),
+            nonce=nonce,
         )
         return sign(secret=self.secret, to_sign=to_sign, nonce=nonce, now=now)
 
@@ -1504,6 +1509,7 @@ class ToSubscriberHmacAuth:
 
         to_sign = self._prepare_stateful_confirm_configure(
             broadcaster_nonce=message.broadcaster_nonce,
+            tracing=message.tracing,
             timestamp=token.timestamp,
             nonce=token.nonce,
         )

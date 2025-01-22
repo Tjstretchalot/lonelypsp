@@ -747,7 +747,7 @@ class ToSubscriberAuthConfig(Protocol):
         """
 
     async def authorize_stateful_confirm_configure(
-        self, /, *, broadcaster_nonce: bytes, now: float
+        self, /, *, broadcaster_nonce: bytes, tracing: bytes, now: float
     ) -> Optional[str]:
         """Produces the authorization header to send to the subscriber to confirm
         the stateful configure message they sent was accepted.
@@ -755,6 +755,7 @@ class ToSubscriberAuthConfig(Protocol):
         Args:
             broadcaster_nonce (bytes): the nonce that the broadcaster will send in the
                 confirm configure message
+            tracing (bytes): the tracing data to send to the subscriber, may be empty
             now (float): the current time in seconds since the epoch, as if from `time.time()`
 
         Returns:
@@ -1332,10 +1333,10 @@ class AuthConfigFromParts:
         )
 
     async def authorize_stateful_confirm_configure(
-        self, /, *, broadcaster_nonce: bytes, now: float
+        self, /, *, broadcaster_nonce: bytes, tracing: bytes, now: float
     ) -> Optional[str]:
         return await self.to_subscriber.authorize_stateful_confirm_configure(
-            broadcaster_nonce=broadcaster_nonce, now=now
+            broadcaster_nonce=broadcaster_nonce, tracing=tracing, now=now
         )
 
     async def is_stateful_confirm_configure_allowed(
