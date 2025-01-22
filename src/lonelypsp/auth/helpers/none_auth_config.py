@@ -188,6 +188,23 @@ class ToBroadcasterNoneAuth:
     ) -> AuthResult:
         return AuthResult.OK
 
+    async def authorize_confirm_missed(
+        self, /, *, tracing: bytes, topic: bytes, url: str, now: float
+    ) -> Optional[str]:
+        return None
+
+    async def is_confirm_missed_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        topic: bytes,
+        url: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        return AuthResult.OK
+
 
 class ToSubscriberNoneAuth:
     """Sets up and allows a subscriber that does not block any incoming requests.

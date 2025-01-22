@@ -441,6 +441,47 @@ class ToBroadcasterAuthConfig(Protocol):
         Returns: AuthResult
         """
 
+    async def authorize_confirm_missed(
+        self, /, *, tracing: bytes, topic: bytes, url: str, now: float
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the broadcaster to confirm
+        that the subscriber received that it may have missed a message on the given
+        topic via the given url at approximately the given time.
+
+        Args:
+            tracing (bytes): the tracing data to send to the broadcaster, may be empty
+            topic (bytes): the topic that one or more messages may have been missed on
+            url (str): the url the subscriber missed the message on
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns:
+            str, None: the authorization header to use, if any
+        """
+
+    async def is_confirm_missed_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        topic: bytes,
+        url: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        """Checks the authorization header posted to the broadcaster to confirm
+        that the subscriber received that it may have missed a message on the given
+        topic via the given url at approximately the given time.
+
+        Args:
+            tracing (bytes): the tracing data from the subscriber, may be empty
+            topic (bytes): the topic that one or more messages may have been missed on
+            url (str): the url the subscriber missed the message on
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+            authorization (str, None): the authorization header they provided
+
+        Returns: AuthResult
+        """
+
 
 class ToSubscriberAuthConfig(Protocol):
     """Handles verifying requests from a broadcaster to this subscriber or
@@ -1144,6 +1185,31 @@ class AuthConfigFromParts:
             tracing=tracing,
             identifier=identifier,
             num_subscribers=num_subscribers,
+            url=url,
+            now=now,
+            authorization=authorization,
+        )
+
+    async def authorize_confirm_missed(
+        self, /, *, tracing: bytes, topic: bytes, url: str, now: float
+    ) -> Optional[str]:
+        return await self.to_broadcaster.authorize_confirm_missed(
+            tracing=tracing, topic=topic, url=url, now=now
+        )
+
+    async def is_confirm_missed_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        topic: bytes,
+        url: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        return await self.to_broadcaster.is_confirm_missed_allowed(
+            tracing=tracing,
+            topic=topic,
             url=url,
             now=now,
             authorization=authorization,

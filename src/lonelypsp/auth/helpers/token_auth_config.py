@@ -200,6 +200,23 @@ class ToBroadcasterTokenAuth:
     ) -> AuthResult:
         return self._check_header(authorization)
 
+    async def authorize_confirm_missed(
+        self, /, *, tracing: bytes, topic: bytes, url: str, now: float
+    ) -> Optional[str]:
+        return self.expecting
+
+    async def is_confirm_missed_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        topic: bytes,
+        url: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        return self._check_header(authorization)
+
 
 class ToSubscriberTokenAuth:
     """Allows and produces the authorization header to the subscriber in

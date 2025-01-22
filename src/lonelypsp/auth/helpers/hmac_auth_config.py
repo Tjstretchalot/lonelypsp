@@ -371,6 +371,7 @@ class AuthMessageType(IntEnum):
     SET_SUBSCRIPTIONS = auto()
     STATEFUL_CONTINUE_RECEIVE = auto()
     CONFIRM_RECEIVE = auto()
+    CONFIRM_MISSED = auto()
     RECEIVE = auto()
     MISSED = auto()
     CONFIRM_SUBSCRIBE_EXACT = auto()
@@ -1007,6 +1008,64 @@ class ToBroadcasterHmacAuth:
             tracing=tracing,
             identifier=identifier,
             num_subscribers=num_subscribers,
+            url=url,
+            timestamp=token.timestamp,
+            nonce=token.nonce,
+        )
+        return await check_code(
+            secret=self.secret, to_sign=to_sign, code=token.hmac, db=self.db_config
+        )
+
+    async def _prepare_confirm_missed(
+        self, /, *, tracing: bytes, topic: bytes, url: str, timestamp: int, nonce: str
+    ) -> bytes:
+        encoded_url = url.encode("utf-8")
+        encoded_timestamp = timestamp.to_bytes(8, "big")
+        encoded_nonce = nonce.encode("utf-8")
+
+        return b"".join(
+            [
+                int(AuthMessageType.CONFIRM_MISSED).to_bytes(1, "big"),
+                encoded_timestamp,
+                len(encoded_nonce).to_bytes(1, "big"),
+                encoded_nonce,
+                len(tracing).to_bytes(2, "big"),
+                tracing,
+                len(topic).to_bytes(2, "big"),
+                topic,
+                len(encoded_url).to_bytes(2, "big"),
+                encoded_url,
+            ]
+        )
+
+    async def authorize_confirm_missed(
+        self, /, *, tracing: bytes, topic: bytes, url: str, now: float
+    ) -> Optional[str]:
+        nonce = make_nonce()
+        to_sign = await self._prepare_confirm_missed(
+            tracing=tracing, topic=topic, url=url, timestamp=int(now), nonce=nonce
+        )
+        return sign(secret=self.secret, to_sign=to_sign, nonce=nonce, now=now)
+
+    async def is_confirm_missed_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        topic: bytes,
+        url: str,
+        now: float,
+        authorization: Optional[str],
+    ) -> AuthResult:
+        token = get_token(authorization, now=now, token_lifetime=self.token_lifetime)
+        if token.type == TokenInfoType.UNAUTHORIZED:
+            return AuthResult.UNAUTHORIZED
+        if token.type == TokenInfoType.FORBIDDEN:
+            return AuthResult.FORBIDDEN
+
+        to_sign = await self._prepare_confirm_missed(
+            tracing=tracing,
+            topic=topic,
             url=url,
             timestamp=token.timestamp,
             nonce=token.nonce,

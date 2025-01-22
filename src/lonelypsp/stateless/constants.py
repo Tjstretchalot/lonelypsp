@@ -225,6 +225,19 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
       1 but can be more if this subscriber forwarded the message to others
     """
 
+    RESPONSE_CONFIRM_MISSED = auto()
+    """If the broadcaster reaches out to a subscriber that it missed a message on
+    a topic, the subscriber can respond in the same connection that it received
+    the message. This primarily provides tracing data back to the broadcaster
+    
+    ### response body
+    - 2 bytes (type): int(RESPONSE_CONFIRM_MISSED), big endian, unsigned
+    - 2 bytes (A): length of authorization, big-endian, unsigned
+    - A bytes: authorization, utf-8 encoded
+    - 2 bytes (T): length of tracing data, big-endian, unsigned
+    - T bytes: tracing data
+    """
+
     RESPONSE_UNSUBSCRIBE_IMMEDIATE = auto()
     """If the broadcaster reaches out to a subscriber, the subscriber can respond in
     the same connection that it wants to unsubscribe without authorization. This
@@ -278,11 +291,13 @@ class BroadcasterToSubscriberStatelessMessageType(IntEnum):
     ### headers
     - authorization: proof the broadcaster can notify the subscriber
 
-    ### body
+    ### request body
     - 2 bytes (T): length of the tracing data, big-endian, unsigned
     - T bytes: the tracing data
     - 2 bytes (N): length of the topic, big-endian, unsigned
     - N bytes: the topic
+
+    ### response body
     """
 
     RESPONSE_GENERIC = auto()
