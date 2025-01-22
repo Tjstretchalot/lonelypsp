@@ -277,10 +277,12 @@ class BroadcasterToSubscriberStatelessMessageType(IntEnum):
 
     ### headers
     - authorization: proof the broadcaster can notify the subscriber
-    - x-topic: the topic the message was posted to
 
     ### body
-    none
+    - 2 bytes (T): length of the tracing data, big-endian, unsigned
+    - T bytes: the tracing data
+    - 2 bytes (N): length of the topic, big-endian, unsigned
+    - N bytes: the topic
     """
 
     RESPONSE_GENERIC = auto()
