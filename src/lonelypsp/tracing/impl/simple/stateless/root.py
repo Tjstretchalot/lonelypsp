@@ -29,14 +29,10 @@ class SimpleStatelessTracingSubscriberRoot:
 
 
 class SimpleStatelessTracingBroadcasterRoot:
-    def __init__(self, db: SimpleTracingDBSidecar, config: SimpleTracingConfig) -> None:
-        self.db = db
-        self.config = config
-
     def receive_notify(
         self, initializer: Literal[None], /
     ) -> StatelessTracingNotifyOnReceived:
-        return SimpleStatelessTracingNotifyOnReceived(db=self.db, config=self.config)
+        return SimpleStatelessTracingNotifyOnReceived()
 
 
 if TYPE_CHECKING:

@@ -10,8 +10,8 @@ from lonelypsp.tracing.root import TracingBroadcasterRoot, TracingSubscriberRoot
 
 
 class SimpleTracingBroadcasterRoot:
-    def __init__(self, db: SimpleTracingDBSidecar, config: SimpleTracingConfig) -> None:
-        self.stateless = SimpleStatelessTracingBroadcasterRoot(db, config)
+    def __init__(self) -> None:
+        self.stateless = SimpleStatelessTracingBroadcasterRoot()
 
 
 class SimpleTracingSubscriberRoot:

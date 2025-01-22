@@ -377,13 +377,7 @@ class SimpleStatelessTracingNotifyStart:
 class SimpleStatelessTracingNotifyOnReceived:
     """Broadcaster side"""
 
-    def __init__(self, db: SimpleTracingDBSidecar, config: SimpleTracingConfig) -> None:
-        self.db: SimpleTracingDBSidecar = db
-        """the database to use for the tracing data, assumed to already be entered"""
-
-        self.config: SimpleTracingConfig = config
-        """the configuration for the tracing data"""
-
+    def __init__(self) -> None:
         self.request_received_at_nano: Optional[int] = None
         """when the request was received in nanoseconds"""
 
