@@ -377,6 +377,7 @@ class AuthMessageType(IntEnum):
     CONFIRM_SUBSCRIBE_EXACT = auto()
     CONFIRM_SUBSCRIBE_GLOB = auto()
     CONFIRM_NOTIFY = auto()
+    CHECK_SUBSCRIPTIONS_RESPONSE = auto()
     STATEFUL_CONFIRM_CONFIGURE = auto()
     STATEFUL_ENABLE_ZSTD_PRESET = auto()
     STATEFUL_ENABLE_ZSTD_CUSTOM = auto()
@@ -1517,6 +1518,73 @@ class ToSubscriberHmacAuth:
             subscribers=subscribers,
             topic=topic,
             message_sha512=message_sha512,
+            timestamp=token.timestamp,
+            nonce=token.nonce,
+        )
+        return await check_code(
+            secret=self.secret, to_sign=to_sign, code=token.hmac, db=self.db_config
+        )
+
+    def _prepare_check_subscriptions_response(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        strong_etag: StrongEtag,
+        timestamp: int,
+        nonce: str,
+    ) -> bytes:
+        encoded_timestamp = timestamp.to_bytes(8, "big")
+        encoded_nonce = nonce.encode("utf-8")
+
+        return b"".join(
+            [
+                int(AuthMessageType.CHECK_SUBSCRIPTIONS_RESPONSE).to_bytes(1, "big"),
+                encoded_timestamp,
+                len(encoded_nonce).to_bytes(1, "big"),
+                encoded_nonce,
+                len(tracing).to_bytes(2, "big"),
+                tracing,
+                strong_etag.format.to_bytes(1, "big"),
+                strong_etag.etag,
+            ]
+        )
+
+    async def authorize_check_subscriptions_response(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        strong_etag: StrongEtag,
+        now: float,
+    ) -> Optional[str]:
+        nonce = make_nonce()
+        to_sign = self._prepare_check_subscriptions_response(
+            tracing=tracing,
+            strong_etag=strong_etag,
+            timestamp=int(now),
+            nonce=nonce,
+        )
+        return sign(secret=self.secret, to_sign=to_sign, nonce=nonce, now=now)
+
+    async def is_check_subscription_response_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        strong_etag: StrongEtag,
+        authorization: Optional[str],
+        now: float,
+    ) -> AuthResult:
+        token = get_token(authorization, now=now, token_lifetime=self.token_lifetime)
+        if token.type == TokenInfoType.UNAUTHORIZED:
+            return AuthResult.UNAUTHORIZED
+        if token.type == TokenInfoType.FORBIDDEN:
+            return AuthResult.FORBIDDEN
+
+        to_sign = self._prepare_check_subscriptions_response(
+            tracing=tracing,
+            strong_etag=strong_etag,
             timestamp=token.timestamp,
             nonce=token.nonce,
         )
