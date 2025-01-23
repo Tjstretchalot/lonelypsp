@@ -358,6 +358,22 @@ class ToSubscriberNoneAuth:
     ) -> AuthResult:
         return AuthResult.OK
 
+    async def authorize_set_subscriptions_response(
+        self, /, *, tracing: bytes, strong_etag: StrongEtag, now: float
+    ) -> Optional[str]:
+        return None
+
+    async def is_set_subscription_response_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        strong_etag: StrongEtag,
+        authorization: Optional[str],
+        now: float,
+    ) -> AuthResult:
+        return AuthResult.OK
+
     async def authorize_stateful_confirm_configure(
         self, /, *, broadcaster_nonce: bytes, tracing: bytes, now: float
     ) -> Optional[str]:

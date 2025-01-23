@@ -185,6 +185,8 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - authorization: proof the subscriber is authorized to set the subscriptions for the url
 
     ### request body
+    - 2 bytes (T): length of tracing data, big-endian, unsigned
+    - T bytes: the tracing data
     - 2 bytes (N): length of the subscriber url to set, big-endian, unsigned
     - N bytes: the url to set, utf-8 encoded
     - 1 byte (reserved for etag format): 0

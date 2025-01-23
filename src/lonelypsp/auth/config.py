@@ -828,6 +828,37 @@ class ToSubscriberAuthConfig(Protocol):
         Returns: AuthResult
         """
 
+    async def authorize_set_subscriptions_response(
+        self, /, *, tracing: bytes, strong_etag: StrongEtag, now: float
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the subscriber in response
+        to a SET_SUBSCRIPTIONS request
+
+        Args:
+            tracing (bytes): the tracing data to send to the subscriber, may be empty
+            strong_etag (StrongEtag): the strong etag to return
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+        """
+
+    async def is_set_subscription_response_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        strong_etag: StrongEtag,
+        authorization: Optional[str],
+        now: float,
+    ) -> AuthResult:
+        """Checks the authorization header posted to the subscriber in response
+        to a SET_SUBSCRIPTIONS request
+
+        Args:
+            tracing (bytes): the tracing data from the broadcaster, may be empty
+            strong_etag (StrongEtag): the strong etag to return
+            authorization (str, None): the authorization header they provided
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+        """
+
     async def authorize_stateful_confirm_configure(
         self, /, *, broadcaster_nonce: bytes, tracing: bytes, now: float
     ) -> Optional[str]:
@@ -1461,6 +1492,29 @@ class AuthConfigFromParts:
         now: float,
     ) -> AuthResult:
         return await self.to_subscriber.is_check_subscription_response_allowed(
+            tracing=tracing,
+            strong_etag=strong_etag,
+            authorization=authorization,
+            now=now,
+        )
+
+    async def authorize_set_subscriptions_response(
+        self, /, *, tracing: bytes, strong_etag: StrongEtag, now: float
+    ) -> Optional[str]:
+        return await self.to_subscriber.authorize_set_subscriptions_response(
+            tracing=tracing, strong_etag=strong_etag, now=now
+        )
+
+    async def is_set_subscription_response_allowed(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        strong_etag: StrongEtag,
+        authorization: Optional[str],
+        now: float,
+    ) -> AuthResult:
+        return await self.to_subscriber.is_set_subscription_response_allowed(
             tracing=tracing,
             strong_etag=strong_etag,
             authorization=authorization,
