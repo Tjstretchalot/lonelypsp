@@ -53,7 +53,7 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - 2 bytes (N): length of the url that the subscriber can be reached at, big-endian, unsigned
     - N bytes: the url that the subscriber can be reached at, utf-8 encoded
     - 2 bytes (M): the length of the topic, big-endian, unsigned
-    - M bytes: the topic, utf-8 encoded
+    - M bytes: the topic
     - 2 bytes (R): either 0, to indicate no missed messages are desired, or the length
       of the url to post missed messages to, big-endian, unsigned
     - R bytes: the url to post missed messages to, utf-8 encoded
@@ -99,7 +99,7 @@ class SubscriberToBroadcasterStatelessMessageType(IntEnum):
     - 2 bytes (N): length of the url that the subscriber can be reached at, big-endian, unsigned
     - N bytes: the url that the subscriber can be reached at, utf-8 encoded
     - 2 bytes (M): the length of the topic, big-endian, unsigned
-    - M bytes: the topic, utf-8 encoded
+    - M bytes: the topic
     - 2 bytes (T): length of the tracing data, big-endian, unsigned
     - T bytes: the tracing data
     

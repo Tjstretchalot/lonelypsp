@@ -1,6 +1,6 @@
 [project]
 name = "lonelypsp"
-version = "0.0.34"
+version = "0.0.35"
 description = "Connectionless Pub-Sub Protocol"
 readme = "README.md"
 authors = [
