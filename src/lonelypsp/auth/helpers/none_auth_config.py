@@ -435,7 +435,7 @@ class ToSubscriberNoneAuth:
     ) -> AuthResult:
         return AuthResult.OK
 
-    async def authorization_stateful_continue_notify(
+    async def authorize_stateful_continue_notify(
         self, /, *, tracing: bytes, identifier: bytes, part_id: int, now: float
     ) -> Optional[str]:
         return None

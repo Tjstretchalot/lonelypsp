@@ -1009,7 +1009,7 @@ class ToSubscriberAuthConfig(Protocol):
         Returns: AuthResult
         """
 
-    async def authorization_stateful_continue_notify(
+    async def authorize_stateful_continue_notify(
         self, /, *, tracing: bytes, identifier: bytes, part_id: int, now: float
     ) -> Optional[str]:
         """Produces the authorization header to send to the subscriber to continue
@@ -1646,10 +1646,10 @@ class AuthConfigFromParts:
             url=url, message=message, now=now
         )
 
-    async def authorization_stateful_continue_notify(
+    async def authorize_stateful_continue_notify(
         self, /, *, tracing: bytes, identifier: bytes, part_id: int, now: float
     ) -> Optional[str]:
-        return await self.to_subscriber.authorization_stateful_continue_notify(
+        return await self.to_subscriber.authorize_stateful_continue_notify(
             tracing=tracing, identifier=identifier, part_id=part_id, now=now
         )
 
