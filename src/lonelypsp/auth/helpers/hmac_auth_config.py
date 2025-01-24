@@ -1744,7 +1744,6 @@ class ToSubscriberHmacAuth:
         compression_level: int,
         min_size: int,
         max_size: int,
-        authorization: Optional[str],
         now: float,
     ) -> Optional[str]:
         nonce = make_nonce()

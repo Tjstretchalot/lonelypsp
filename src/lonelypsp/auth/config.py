@@ -899,7 +899,6 @@ class ToSubscriberAuthConfig(Protocol):
         compression_level: int,
         min_size: int,
         max_size: int,
-        authorization: Optional[str],
         now: float,
     ) -> Optional[str]:
         """Produces the authorization header to send to the subscriber to enable
@@ -912,7 +911,6 @@ class ToSubscriberAuthConfig(Protocol):
             compression_level (int): the compression level to use
             min_size (int): the minimum size of messages to compress
             max_size (int): the maximum size of messages to compress, up to 2^64 - 1
-            authorization (str, None): the authorization header they provided
             now (float): the current time in seconds since the epoch, as if from `time.time()`
 
         Returns:
@@ -1577,7 +1575,6 @@ class AuthConfigFromParts:
         compression_level: int,
         min_size: int,
         max_size: int,
-        authorization: Optional[str],
         now: float,
     ) -> Optional[str]:
         return await self.to_subscriber.authorize_stateful_enable_zstd_preset(
@@ -1587,7 +1584,6 @@ class AuthConfigFromParts:
             compression_level=compression_level,
             min_size=min_size,
             max_size=max_size,
-            authorization=authorization,
             now=now,
         )
 
