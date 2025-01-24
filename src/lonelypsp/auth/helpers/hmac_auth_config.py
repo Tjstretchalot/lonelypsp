@@ -17,6 +17,7 @@ from lonelypsp.auth.set_subscriptions_info import SetSubscriptionsInfo
 from lonelypsp.compat import fast_dataclass
 from lonelypsp.stateful.messages.configure import S2B_Configure
 from lonelypsp.stateful.messages.confirm_configure import B2S_ConfirmConfigure
+from lonelypsp.stateful.messages.continue_notify import B2S_ContinueNotify
 from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceive
 from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustom
 from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustom
@@ -383,6 +384,7 @@ class AuthMessageType(IntEnum):
     STATEFUL_ENABLE_ZSTD_PRESET = auto()
     STATEFUL_ENABLE_ZSTD_CUSTOM = auto()
     STATEFUL_DISABLE_ZSTD_CUSTOM = auto()
+    STATEFUL_CONTINUE_NOTIFY = auto()
 
 
 class ToBroadcasterHmacAuth:
@@ -1930,6 +1932,68 @@ class ToSubscriberHmacAuth:
             tracing=message.tracing,
             compressor_identifier=message.identifier,
             url=url,
+            timestamp=token.timestamp,
+            nonce=token.nonce,
+        )
+        return await check_code(
+            secret=self.secret, to_sign=to_sign, code=token.hmac, db=self.db_config
+        )
+
+    def _prepare_stateful_continue_notify(
+        self,
+        /,
+        *,
+        tracing: bytes,
+        identifier: bytes,
+        part_id: int,
+        timestamp: int,
+        nonce: str,
+    ) -> bytes:
+        encoded_timestamp = timestamp.to_bytes(8, "big")
+        encoded_nonce = nonce.encode("utf-8")
+
+        return b"".join(
+            [
+                int(AuthMessageType.STATEFUL_CONTINUE_NOTIFY).to_bytes(1, "big"),
+                encoded_timestamp,
+                len(encoded_nonce).to_bytes(1, "big"),
+                encoded_nonce,
+                len(tracing).to_bytes(2, "big"),
+                tracing,
+                len(identifier).to_bytes(1, "big"),
+                identifier,
+                part_id.to_bytes(4, "big"),
+            ]
+        )
+
+    async def authorization_stateful_continue_notify(
+        self, /, *, tracing: bytes, identifier: bytes, part_id: int, now: float
+    ) -> Optional[str]:
+        nonce = make_nonce()
+        to_sign = self._prepare_stateful_continue_notify(
+            tracing=tracing,
+            identifier=identifier,
+            part_id=part_id,
+            timestamp=int(now),
+            nonce=nonce,
+        )
+        return sign(secret=self.secret, to_sign=to_sign, nonce=nonce, now=now)
+
+    async def is_stateful_continue_notify_allowed(
+        self, /, *, message: B2S_ContinueNotify, now: float
+    ) -> AuthResult:
+        token = get_token(
+            message.authorization, now=now, token_lifetime=self.token_lifetime
+        )
+        if token.type == TokenInfoType.UNAUTHORIZED:
+            return AuthResult.UNAUTHORIZED
+        if token.type == TokenInfoType.FORBIDDEN:
+            return AuthResult.FORBIDDEN
+
+        to_sign = self._prepare_stateful_continue_notify(
+            tracing=message.tracing,
+            identifier=message.identifier,
+            part_id=message.part_id,
             timestamp=token.timestamp,
             nonce=token.nonce,
         )

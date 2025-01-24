@@ -10,6 +10,7 @@ from typing import (
 from lonelypsp.auth.set_subscriptions_info import SetSubscriptionsInfo
 from lonelypsp.stateful.messages.configure import S2B_Configure
 from lonelypsp.stateful.messages.confirm_configure import B2S_ConfirmConfigure
+from lonelypsp.stateful.messages.continue_notify import B2S_ContinueNotify
 from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceive
 from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustom
 from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustom
@@ -1008,6 +1009,37 @@ class ToSubscriberAuthConfig(Protocol):
         Returns: AuthResult
         """
 
+    async def authorization_stateful_continue_notify(
+        self, /, *, tracing: bytes, identifier: bytes, part_id: int, now: float
+    ) -> Optional[str]:
+        """Produces the authorization header to send to the subscriber to continue
+        sending the message with the given identifier and part id over a stateful
+        connection
+
+        Args:
+            tracing (bytes): the tracing data to send to the subscriber, may be empty
+            identifier (bytes): the arbitrary identifier of the message being sent.
+                this identifier was assigned by the subscriber
+            part_id (bytes): the part id that was received by the broadcaster
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns:
+            str, None: the authorization header to use, if any
+        """
+
+    async def is_stateful_continue_notify_allowed(
+        self, /, *, message: B2S_ContinueNotify, now: float
+    ) -> AuthResult:
+        """Checks the authorization header posted to the subscriber to continue
+        sending the message with the given identifier and part id
+
+        Args:
+            message (B2S_ContinueNotify): the continue notify message from the broadcaster
+            now (float): the current time in seconds since the epoch, as if from `time.time()`
+
+        Returns: AuthResult
+        """
+
 
 class AuthConfig(ToBroadcasterAuthConfig, ToSubscriberAuthConfig, Protocol): ...
 
@@ -1612,6 +1644,20 @@ class AuthConfigFromParts:
     ) -> AuthResult:
         return await self.to_subscriber.is_stateful_disable_zstd_custom_allowed(
             url=url, message=message, now=now
+        )
+
+    async def authorization_stateful_continue_notify(
+        self, /, *, tracing: bytes, identifier: bytes, part_id: int, now: float
+    ) -> Optional[str]:
+        return await self.to_subscriber.authorization_stateful_continue_notify(
+            tracing=tracing, identifier=identifier, part_id=part_id, now=now
+        )
+
+    async def is_stateful_continue_notify_allowed(
+        self, /, *, message: B2S_ContinueNotify, now: float
+    ) -> AuthResult:
+        return await self.to_subscriber.is_stateful_continue_notify_allowed(
+            message=message, now=now
         )
 
 

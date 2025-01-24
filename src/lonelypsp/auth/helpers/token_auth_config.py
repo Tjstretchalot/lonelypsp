@@ -9,6 +9,7 @@ from lonelypsp.auth.config import (
 from lonelypsp.auth.set_subscriptions_info import SetSubscriptionsInfo
 from lonelypsp.stateful.messages.configure import S2B_Configure
 from lonelypsp.stateful.messages.confirm_configure import B2S_ConfirmConfigure
+from lonelypsp.stateful.messages.continue_notify import B2S_ContinueNotify
 from lonelypsp.stateful.messages.continue_receive import S2B_ContinueReceive
 from lonelypsp.stateful.messages.disable_zstd_custom import B2S_DisableZstdCustom
 from lonelypsp.stateful.messages.enable_zstd_custom import B2S_EnableZstdCustom
@@ -455,6 +456,16 @@ class ToSubscriberTokenAuth:
 
     async def is_stateful_disable_zstd_custom_allowed(
         self, /, *, url: str, message: B2S_DisableZstdCustom, now: float
+    ) -> AuthResult:
+        return self._check_header(message.authorization)
+
+    async def authorization_stateful_continue_notify(
+        self, /, *, tracing: bytes, identifier: bytes, part_id: int, now: float
+    ) -> Optional[str]:
+        return self.expecting
+
+    async def is_stateful_continue_notify_allowed(
+        self, /, *, message: B2S_ContinueNotify, now: float
     ) -> AuthResult:
         return self._check_header(message.authorization)
 
