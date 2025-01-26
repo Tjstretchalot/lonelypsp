@@ -323,7 +323,7 @@ class BroadcasterToSubscriberStatelessMessageType(IntEnum):
     - A bytes: the authorization
     - 2 bytes (T): big-endian, unsigned, the length of tracing data
     - T bytes: the tracing data
-    - 2 bytes: big-endian, unsigned, the number of subscribers notified
+    - 4 bytes: big-endian, unsigned, the number of subscribers notified
     - 1 byte (I): length of the identifier, big-endian, unsigned
     - I bytes: the identifier
     """

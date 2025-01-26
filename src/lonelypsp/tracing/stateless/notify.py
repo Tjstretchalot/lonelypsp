@@ -215,6 +215,8 @@ class StatelessTracingNotifyOnResponseReceived(Protocol):
 
 
 class StatelessTracingNotifyOnRetryDetermined(Protocol):
+    """Called on the subscriber"""
+
     def on_retry_prevented(self) -> None:
         """Called if the subscriber does not want to attempt to retry this
         type of error
