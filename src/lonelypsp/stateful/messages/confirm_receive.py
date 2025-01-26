@@ -38,8 +38,18 @@ class S2B_ConfirmReceive:
     tracing: bytes
     """the tracing data, which may be empty"""
 
+    num_subscribers: int
+    """the number of subscribers that received the message; usually 1, but can be more
+    when this subscriber is acting as a relay
+    """
 
-_headers: Collection[str] = ("x-identifier", "authorization", "x-tracing")
+
+_headers: Collection[str] = (
+    "x-identifier",
+    "authorization",
+    "x-tracing",
+    "x-num-subscribers",
+)
 
 
 class S2B_ConfirmRecieveParser:
@@ -72,12 +82,17 @@ class S2B_ConfirmRecieveParser:
                 raise ValueError("authorization must be a utf-8 string")
 
         tracing = headers["x-tracing"]
+        num_subscribers_bytes = headers["x-num-subscribers"]
+        if len(num_subscribers_bytes) > 4:
+            raise ValueError("x-num-subscribers must be at most 4 bytes")
+        num_subscribers = int.from_bytes(num_subscribers_bytes, "big")
 
         return S2B_ConfirmReceive(
             type=type,
             identifier=identifier,
             authorization=authorization,
             tracing=tracing,
+            num_subscribers=num_subscribers,
         )
 
 
@@ -96,6 +111,7 @@ def serialize_s2b_confirm_receive(
             msg.identifier,
             msg.authorization.encode("utf-8") if msg.authorization is not None else b"",
             msg.tracing,
+            msg.num_subscribers.to_bytes(4, "big"),
         ),
         payload=b"",
         minimal_headers=minimal_headers,
