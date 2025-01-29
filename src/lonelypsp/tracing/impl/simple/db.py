@@ -176,7 +176,11 @@ def _thread_main(
 
             try:
                 result = cast(
-                    _ThreadQueueItem, q.get(block=True, timeout=min(10, timeout))
+                    _ThreadQueueItem,
+                    q.get(
+                        block=True,
+                        timeout=None if timeout is None else min(10, timeout),
+                    ),
                 )
             except queue.Empty:
                 continue
