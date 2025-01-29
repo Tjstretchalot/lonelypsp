@@ -239,6 +239,7 @@ def serialize_s2b_notify(
         header_names=_headers,
         header_values=(
             authorization_bytes,
+            msg.tracing,
             msg.identifier,
             msg.topic,
             int_to_minimal_unsigned(msg.compressor_id),

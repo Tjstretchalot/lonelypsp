@@ -37,7 +37,7 @@ class ToBroadcasterTokenAuth:
             return AuthResult.UNAUTHORIZED
         if not hmac.compare_digest(authorization, self.expecting):
             return AuthResult.FORBIDDEN
-        return self._check_header(authorization)
+        return AuthResult.OK
 
     async def authorize_subscribe_exact(
         self,
@@ -239,7 +239,7 @@ class ToSubscriberTokenAuth:
             return AuthResult.UNAUTHORIZED
         if not hmac.compare_digest(authorization, self.expecting):
             return AuthResult.FORBIDDEN
-        return self._check_header(authorization)
+        return AuthResult.OK
 
     async def authorize_receive(
         self,
