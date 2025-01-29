@@ -217,7 +217,7 @@ class SimpleTracingDBSidecar:
             try:
                 thread = threading.Thread(
                     target=_thread_main,
-                    args=(self.database, q),
+                    args=(self.config, self.database, q),
                     daemon=True,
                 )
 
