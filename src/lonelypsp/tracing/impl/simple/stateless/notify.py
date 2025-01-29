@@ -142,7 +142,7 @@ class SimpleStatelessTracingNotifyStart:
                     "INSERT INTO stateless_notify_timings "
                     "(notify_id, ord, name, extra, occurred_at, raw_occurred_at) "
                     "SELECT"
-                    " stateless_notifies.id, ?, ?, ?, ? "
+                    " stateless_notifies.id, ?, ?, ?, ?, ? "
                     "FROM stateless_notifies "
                     "WHERE stateless_notifies.uid = ?",
                     [
@@ -179,7 +179,7 @@ class SimpleStatelessTracingNotifyStart:
                     "INSERT INTO stateless_notify_timings "
                     "(notify_id, ord, name, extra, occurred_at, raw_occurred_at) "
                     "SELECT"
-                    " stateless_notifies.id, ?, ?, ?, ? "
+                    " stateless_notifies.id, ?, ?, ?, ?, ? "
                     "FROM stateless_notifies "
                     "WHERE stateless_notifies.uid = ?",
                     [
@@ -326,7 +326,7 @@ class SimpleStatelessTracingNotifyStart:
                 "INSERT INTO stateless_notify_timings "
                 "(notify_id, ord, name, extra, occurred_at, raw_occurred_at) "
                 "SELECT"
-                " stateless_notifies.id, ?, ?, ?, ? "
+                " stateless_notifies.id, ?, ?, ?, ?, ? "
                 "FROM stateless_notifies "
                 "WHERE stateless_notifies.uid = ?",
                 [
@@ -359,7 +359,7 @@ class SimpleStatelessTracingNotifyStart:
                     "INSERT INTO stateless_notify_timings "
                     "(notify_id, ord, name, extra, occurred_at, raw_occurred_at) "
                     "SELECT"
-                    " stateless_notifies.id, ?, ?, ?, ? "
+                    " stateless_notifies.id, ?, ?, ?, ?, ? "
                     "FROM stateless_notifies "
                     "WHERE stateless_notifies.uid = ?",
                     [
@@ -368,6 +368,7 @@ class SimpleStatelessTracingNotifyStart:
                         remote_trace.extra_json,
                         remote_trace.occurred_at_remote - offset.offset,
                         remote_trace.occurred_at_remote,
+                        self.uid,
                     ],
                 )
             )
