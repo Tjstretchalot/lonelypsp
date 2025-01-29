@@ -167,6 +167,7 @@ class SimpleStatelessTracingNotifyStart:
     ) -> None:
         assert self._entered, "not entered"
         assert not self._exited, "already exited"
+        occurred_at = time.time()
         self.db.enqueue(
             [
                 ("BEGIN IMMEDIATE TRANSACTION", []),
@@ -176,7 +177,7 @@ class SimpleStatelessTracingNotifyStart:
                 ),
                 (
                     "INSERT INTO stateless_notify_timings "
-                    "(notify_id, ord, name, extra, occurred_at) "
+                    "(notify_id, ord, name, extra, occurred_at, raw_occurred_at) "
                     "SELECT"
                     " stateless_notifies.id, ?, ?, ?, ? "
                     "FROM stateless_notifies "
@@ -185,7 +186,8 @@ class SimpleStatelessTracingNotifyStart:
                         self._reserve_ord(),
                         name,
                         b'{"filelike": ' + (b"true}" if filelike else b"false}"),
-                        time.time(),
+                        occurred_at,
+                        occurred_at,
                         self.uid,
                     ],
                 ),

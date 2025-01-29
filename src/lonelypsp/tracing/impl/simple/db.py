@@ -175,7 +175,9 @@ def _thread_main(
                 timeout = next_sweep_at - now
 
             try:
-                result = cast(_ThreadQueueItem, q.get(block=True, timeout=timeout))
+                result = cast(
+                    _ThreadQueueItem, q.get(block=True, timeout=min(10, timeout))
+                )
             except queue.Empty:
                 continue
             if result.type == _ThreadQueueItemType.STOP:
