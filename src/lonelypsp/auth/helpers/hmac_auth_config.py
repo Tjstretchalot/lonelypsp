@@ -6,7 +6,7 @@ import secrets
 import sqlite3
 import time
 from enum import Enum, IntEnum, auto
-from typing import TYPE_CHECKING, Literal, Optional, Protocol, Type, Union, cast
+from typing import TYPE_CHECKING, Literal, Optional, Protocol, Tuple, Type, Union, cast
 
 from lonelypsp.auth.config import (
     AuthResult,
@@ -212,7 +212,7 @@ class IncomingHmacAuthSqliteDBConfig:
                 cursor.execute(
                     "SELECT expires_at FROM httppubsub_hmacs ORDER BY expires_at ASC LIMIT 1"
                 )
-                next_expires_at = cast(Optional[int], cursor.fetchone())
+                next_expires_at = cast(Optional[Tuple[int]], cursor.fetchone())
                 cursor.execute("COMMIT")
             except BaseException:
                 cursor.execute("ROLLBACK")
@@ -224,7 +224,7 @@ class IncomingHmacAuthSqliteDBConfig:
                 await asyncio.sleep(self.token_lifetime + self.cleanup_batch_delay)
                 continue
 
-            await asyncio.sleep(max(next_expires_at - now, self.cleanup_batch_delay))
+            await asyncio.sleep(max(next_expires_at[0] - now, self.cleanup_batch_delay))
 
 
 class TokenInfoType(Enum):
